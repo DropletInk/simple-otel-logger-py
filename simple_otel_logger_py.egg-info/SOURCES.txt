@@ -1,0 +1,8 @@
+pyproject.toml
+simple_otel_logger/__init__.py
+simple_otel_logger/logger.py
+simple_otel_logger_py.egg-info/PKG-INFO
+simple_otel_logger_py.egg-info/SOURCES.txt
+simple_otel_logger_py.egg-info/dependency_links.txt
+simple_otel_logger_py.egg-info/requires.txt
+simple_otel_logger_py.egg-info/top_level.txt

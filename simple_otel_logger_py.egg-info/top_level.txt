@@ -1,0 +1,1 @@
+simple_otel_logger
