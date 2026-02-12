@@ -1,0 +1,3 @@
+.venv/
+.vscode/
+simple_otel_logger_py.egg-info
