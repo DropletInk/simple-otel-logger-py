@@ -4,7 +4,7 @@ from typing import Optional, Any, Dict
 
 from opentelemetry import trace
 
-from logger_interface import Logger
+from .logger_interface import Logger
 
 
 class ConsoleLogger(Logger):

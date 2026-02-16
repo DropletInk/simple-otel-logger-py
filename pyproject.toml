@@ -10,3 +10,7 @@ dependencies = [
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["simple_otel_logger*"]
+exclude = ["external_test*"]
