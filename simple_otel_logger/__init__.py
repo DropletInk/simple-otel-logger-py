@@ -1,3 +1,10 @@
-from .logger import Logger
+from .logger import (
+    ConsoleLogger,
+)
 
-__all__ = ["Logger"]
+from .logger_interface import (Logger)
+
+__all__ = [
+    "Logger",
+    "ConsoleLogger",
+]
