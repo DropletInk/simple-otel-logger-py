@@ -1,4 +1,5 @@
 import json
+import sys
 from datetime import datetime
 from typing import Optional, Any, Dict
 
@@ -37,7 +38,12 @@ class ConsoleLogger(Logger):
             "data": data,
         }
 
-        print(json.dumps(record))
+        out = json.dumps(record)
+
+        if level in ("error", "warn"):
+         print(out, file=sys.stderr)
+        else:
+         print(out)
 
     def info(self, message: str, data: Any = None) -> None:
         self._log("info", message, data)
