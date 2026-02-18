@@ -7,6 +7,10 @@ class Logger(ABC):
         self.service_name = service_name
 
     @abstractmethod
+    def _log(self, level: str, message: str, data: Any = None) -> None:
+        pass
+
+    @abstractmethod
     def info(self, message: str, data: Any = None) -> None:
         pass
 
