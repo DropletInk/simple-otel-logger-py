@@ -1,6 +1,17 @@
-from simple_otel_logger import ConsoleLogger
+from simple_otel_logger.logger import ConsoleLogger
 
-logger = ConsoleLogger("test-service")
+logger = ConsoleLogger(service_name="auth-service")
 
-logger.info("Hello from external folder")
-logger.error("Something broke")
+
+def create_user(user_id: int):
+    logger.info("Creating user", {"user_id": user_id})
+
+    try:
+        # simulate work
+        result = {"status": "created"}
+        logger.info("User created successfully", result)
+        return result
+
+    except Exception as e:
+        logger.error("User creation failed", {"error": str(e)})
+        raise
