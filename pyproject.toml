@@ -1,0 +1,16 @@
+[project]
+name = "simple-otel-logger-py"
+version = "0.1.0"
+description = "Minimal OpenTelemetry aware logger"
+authors = [{name="Your Name"}]
+dependencies = [
+    "opentelemetry-api"
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["simple_otel_logger*"]
+exclude = ["external_test*"]
