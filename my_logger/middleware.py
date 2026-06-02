@@ -5,9 +5,10 @@ from fastapi import Request
 from .context import bind_request_context, clear_request_context
 from .logger import get_logger
 from .metrics import ACTIVE_REQUESTS, ERROR_COUNT, REQUEST_COUNT, REQUEST_LATENCY
+from .config import configure_logger
 
-log = get_logger()
-
+configure_logger()  
+logger = get_logger()
 
 async def logging_middleware(request: Request, call_next):
 
@@ -18,7 +19,7 @@ async def logging_middleware(request: Request, call_next):
     bind_request_context()
 
     try:
-        log.info("request_started", method=request.method, path=request.url.path)
+        logger.info("request_started", method=request.method, path=request.url.path)
 
         response = await call_next(request)
 
@@ -34,7 +35,7 @@ async def logging_middleware(request: Request, call_next):
             method=request.method, endpoint=request.url.path
         ).observe(duration)
 
-        log.info(
+        logger.info(
             "request_completed",
             status_code=response.status_code,
             duration=round(duration, 4),
@@ -45,7 +46,7 @@ async def logging_middleware(request: Request, call_next):
     except Exception:
         ERROR_COUNT.labels(method=request.method, endpoint=request.url.path).inc()
 
-        log.exception("request_failed")
+        logger.exception("request_failed")
 
         raise
 
