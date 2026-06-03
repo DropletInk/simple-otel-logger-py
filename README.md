@@ -108,6 +108,35 @@ app.middleware("http")(logging_middleware)
     "level": "info"
 }
 ```
+
+## To Add Custom Spans
+Code Example
+```py
+from my_logger import create_span
+
+@app.get("/")
+async def root():
+    with create_span("root"):
+        message = "Welcome to the Sample FastAPI Application with Structured Logging and OpenTelemetry!"
+        logger.info("Root endpoint accessed", message=message)
+    return {"message": "FastAPI Application Running"}
+```
+
+Result 
+```bash
+{
+    "service": "my-fastapi-service",
+    "message": "Welcome to the Sample FastAPI Application with Structured Logging and OpenTelemetry!",
+    "event": "Root endpoint accessed",
+    "request_id": "c03e4328-e8eb-46ce-bcea-696ea3506b97",
+    "trace_id": "7d10719f7640d20fd4cc85ff76b3f7b7",
+    "span_id": "2c9ad394340a35cc",
+    "hostname": "devang-kamdar",
+    "timestamp": "2026-06-03T13:11:53.093180Z",
+    "level": "info"
+}
+```
 ## Features 
 ### This provides observability for 
 - Microservices and Production grade debugging
+- Custom Spans can be added 
