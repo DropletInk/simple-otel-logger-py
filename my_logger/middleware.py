@@ -2,13 +2,14 @@ import time
 
 from fastapi import Request
 
+from .config import configure_logger
 from .context import bind_request_context, clear_request_context
 from .logger import get_logger
 from .metrics import ACTIVE_REQUESTS, ERROR_COUNT, REQUEST_COUNT, REQUEST_LATENCY
-from .config import configure_logger
 
-configure_logger()  
+configure_logger()
 logger = get_logger()
+
 
 async def logging_middleware(request: Request, call_next):
 
