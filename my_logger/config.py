@@ -4,11 +4,16 @@ from logging.handlers import RotatingFileHandler
 
 import structlog
 
-from .processors import add_app_metadata, add_trace_context, mask_sensitive_data
+from .processors import (
+    add_app_metadata,
+    add_trace_context,
+    mask_sensitive_data,
+    rename_level,
+)
 from .settings import JSON_LOGS, LOG_LEVEL
 
 
-def configure_logger() -> None:
+def configure_logger():
 
     os.makedirs("logs", exist_ok=True)
     file_handler = RotatingFileHandler(
@@ -39,14 +44,14 @@ def configure_logger() -> None:
             mask_sensitive_data,
             add_trace_context,
             add_app_metadata,
-            structlog.processors.TimeStamper(fmt="iso"),
             structlog.processors.add_log_level,
+            rename_level,
+            structlog.processors.TimeStamper(fmt="iso"),
             structlog.processors.StackInfoRenderer(),
             structlog.processors.format_exc_info,
             structlog.processors.UnicodeDecoder(),
             renderer,
         ],
-        # IMPORTANT FIX
         logger_factory=structlog.stdlib.LoggerFactory(),
         wrapper_class=structlog.stdlib.BoundLogger,
         cache_logger_on_first_use=True,
