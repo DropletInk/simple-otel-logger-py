@@ -18,22 +18,30 @@ opentelemetry-api
 ## Environment Configuration
 
 ```js
+Create a .env file :
+
 ENVIRONMENT = development (or deployment)
-LOG_LEVEL = INFO (or DEBUG)
-SERVICE_NAME = app-service ( or the name of the service being used )
+
+// for traces export 
+OTEL_EXPORTER_TRACE_ENDPOINT = http://localhost:4318/v1/traces
+
+// for logs export
+OTEL_EXPORTER_LOG_ENDPOINT = http://localhost:4318/v1/metrics
+
+// for metrics export
+OTEL_EXPORTER_METRICS_ENDPOINT = http://localhost:4318/v1/logs
+
 ```
 
 ## Basic Usage
 
 ```py
-from my_logger import get_logger
+from Pylog import get_logger 
 
-logger = get_logger()
+logger = get_logger(service_name="Post-doc-service")
 
-logger.info("Application started")
-logger.warn("Cache miss")
-logger.error("Login failed", {"user_id": 42})
-logger.debug("Debug details", {"step": 2})
+logger.info("Home endpoint called",event_name="home_request")
+logger.warn(message="I am inside the new_message function",event_name="new_message")
 
 ```
 
@@ -46,8 +54,7 @@ from my_logger import get_logger
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 logger = get_logger()
 
-app = FastAPI(title="Sample FastAPI Application", version="1.0.0")
-
+app = FastAPI()
 FastAPIInstrumentor().instrument_app(app)
 ```
 
@@ -55,34 +62,55 @@ Output
 
 ```bash
 {
-    "service": "app-service",
-    "event": "Random status generated: processing",
-    "trace_id": "5e5eccf6ba765eddd0396349373f1b05",
-    "span_id": "479a380d4523faad",
-    "trace_flags": 3,
-    "hostname": "devang-kamdar",
+    "resources": {
+        "attributes": {
+            "service": "Post-doc-service"
+        }   
+    },
+    "instrumentationScope": {
+        "name": "simple-otel-logger",
+        "version": "1.0.0",
+        "schemaUrl": null
+    },
     "severityText": "INFO",
     "severityNumber": 9,
-    "timestamp": "2026-06-02T09:42:36.404950Z"
+    "eventName": "home_request",
+    "timestamp": "2026-06-09T06:27:16.489916Z",
+    "trace_id": "f03d69f53c59d70d33e9519b5e38c383",
+    "span_id": "a94029760493094a",
+    "trace_flags": "03",
+    "attributes": {},
+    "event": "Home endpoint called"
 }
 ```
-
-## For Metrics Visualization
-
-```py
-
-from my_logger import get_logger,metrics_router
-app.include_router(metrics_router, prefix="", tags=["Metrics"])
-
-```
-
-After Adding the above code will add a default endpoint for metrics
 
 ## For the middlewares
 
 ```py
 
-app.middleware("http")(logging_middleware)
+from Pylog import LoggingMiddleware
+
+
+app.add_middleware(
+    LoggingMiddleware,
+    logger=logger,
+    environment="development",
+    request_data=lambda req: {
+        "method": req.method,
+        "path": req.url.path,
+        "query_params": str(req.query_params),
+        "client_ip": req.client.host if req.client else None,
+        "url": str(req.url),
+        "ip_address": req.client.host if req.client else None,
+        "user_agent": req.headers.get("user-agent"),
+    },
+    response_data=lambda req, res: {
+        "status_code": res.status_code,
+        "url": str(req.url),
+        "handler": req.scope.get("endpoint").__name__ if req.scope.get("endpoint") else None,
+    },
+)
+
 
 ```
 
@@ -92,18 +120,35 @@ app.middleware("http")(logging_middleware)
 
 ```bash
 {
-    "service": "app-service",
-    "method": "GET",
-    "path": "/health",
-    "event": "request_started",
-    "request_id": "8562d006-9c24-487a-9f0e-2279c2eaabf0",
-    "trace_id": "e6a507d3ed0e3cedb09bb309f6516d35",
-    "span_id": "4de66871bad4b4f3",
-    "trace_flags": 3,
-    "hostname": "devang-kamdar",
+    "resources": {
+        "attributes": {
+            "service": "Post-doc-service"
+        }
+    },
+    "instrumentationScope": {
+        "name": "simple-otel-logger",
+        "version": "1.0.0",
+        "schemaUrl": null
+    },
     "severityText": "INFO",
     "severityNumber": 9,
-    "timestamp": "2026-06-02T11:27:21.240551Z"
+    "eventName": "HTTP request Attempt",
+    "timestamp": "2026-06-09T06:27:16.489454Z",
+    "trace_id": "f03d69f53c59d70d33e9519b5e38c383",
+    "span_id": "a94029760493094a",
+    "trace_flags": "03",
+    "attributes": {
+        "request_id": "f03d69f53c59d70d33e9519b5e38c383",
+        "environment": "development",
+        "method": "GET",
+        "path": "/",
+        "query_params": "",
+        "client_ip": "127.0.0.1",
+        "url": "http://127.0.0.1:8000/",
+        "ip_address": "127.0.0.1",
+        "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.123.0 Chrome/148.0.7778.97 Electron/42.2.0 Safari/537.36"
+    },
+    "event": "HTTP request received"
 }
 ```
 
@@ -111,57 +156,64 @@ app.middleware("http")(logging_middleware)
 
 ```bash
 {
-    "service": "app-service",
-    "status_code": 200,
-    "duration": 0.0009,
-    "event": "request_completed",
-    "request_id": "8562d006-9c24-487a-9f0e-2279c2eaabf0",
-    "trace_id": "e6a507d3ed0e3cedb09bb309f6516d35",
-    "span_id": "4de66871bad4b4f3",
-    "trace_flags": 3,
-    "hostname": "devang-kamdar",
+    "resources": {
+        "attributes": {
+            "service": "Post-doc-service"
+        }
+    },
+    "instrumentationScope": {
+        "name": "simple-otel-logger",
+        "version": "1.0.0",
+        "schemaUrl": null
+    },
     "severityText": "INFO",
     "severityNumber": 9,
-    "timestamp": "2026-06-02T11:27:21.241487Z"
+    "eventName": "HTTP request Success",
+    "timestamp": "2026-06-09T06:27:16.490132Z",
+    "trace_id": "f03d69f53c59d70d33e9519b5e38c383",
+    "span_id": "a94029760493094a",
+    "trace_flags": "03",
+    "attributes": {
+        "request_id": "f03d69f53c59d70d33e9519b5e38c383",
+        "environment": "development",
+        "duration": 0.0009,
+        "status_code": 200,
+        "url": "http://127.0.0.1:8000/",
+        "handler": "home"
+    },
+    "event": "HTTP response sent"
 }
 ```
+### Creating Custom spans to  add in logs 
 
-## To Add Custom Spans
-
-Code Example
-
+Example for file system 
 ```py
-from my_logger import create_span
+from Pylog import custom_span
 
-@app.get("/")
-async def root():
-    with create_span("root"):
-        message = "Welcome to the Sample FastAPI Application with Structured Logging and OpenTelemetry!"
-        logger.info("Root endpoint accessed", message=message)
-    return {"message": "FastAPI Application Running"}
+def read_file(filename: str):
+
+    with custom_span(
+        "file.read",
+        {
+            "file.name": filename,
+        },
+    ) as span:
+
+        span.add_event("file_opened")
+
+        with open(filename, "r") as f:
+            content = f.read()
+
+        span.add_event("file_closed")
+
+        return content
+
+
 ```
-
-Result
-
-```bash
-{
-    "service": "my-fastapi-service",
-    "message": "Welcome to the Sample FastAPI Application with Structured Logging and OpenTelemetry!",
-    "event": "Root endpoint accessed",
-    "request_id": "98a9b541-7513-4126-84e1-37d764208ee0",
-    "trace_id": "a2f415fc4b42b80af2dc54ab75f4621b",
-    "span_id": "f6dba492f9c4cb5c",
-    "trace_flags": 3,
-    "hostname": "devang-kamdar",
-    "severityText": "INFO",
-    "severityNumber": 9,
-    "timestamp": "2026-06-04T05:08:13.255731Z"
-}
-```
-
 ## Features
 
 ### This provides observability for
 
 - Microservices and Production grade debugging
 - Custom Spans can be added
+- Middleware handeling is done 
