@@ -1,20 +1,20 @@
-from .metrics import counter
 from datetime import datetime
 from functools import wraps
-from typing import Any
-
+from typing import Any, TypedDict
+from types import Severity
 import structlog
 from opentelemetry import trace
 
 tracer = trace.get_tracer("simple-otel-logger")
-SEVERITY = {
-    "DEBUG": 5,
-    "INFO": 9,
-    "WARN": 13,
-    "ERROR": 17,
-}
 
-def get_otel_context() -> dict[str, Any]:
+
+class OTelContext(TypedDict):
+    trace_id: str
+    span_id: str
+    trace_flags: str
+
+
+def get_otel_context() -> OTelContext:
     span = trace.get_current_span()
 
     if not span:
@@ -30,6 +30,7 @@ def get_otel_context() -> dict[str, Any]:
         "span_id": format(ctx.span_id, "016x"),
         "trace_flags": format(ctx.trace_flags, "02x"),
     }
+
 
 def traced(span_name: str | None = None):
 
@@ -80,7 +81,7 @@ class Logger:
                 "schemaUrl": None,
             },
             "severityText": level,
-            "severityNumber": SEVERITY.get(level, 1),
+            "severityNumber": Severity.get(level, 1),
             # "message": message,
             "eventName": event_name,
             "timestamp": datetime.utcnow().isoformat(),

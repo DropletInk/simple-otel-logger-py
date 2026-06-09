@@ -1,4 +1,4 @@
-from .telemetry import get_meter
+from telemetry import get_meter
 
 _metrics = {}
 
