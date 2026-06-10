@@ -1,7 +1,7 @@
 from datetime import datetime
 from functools import wraps
 from typing import Any, TypedDict
-from types import Severity
+from pylog.types import Severity
 import structlog
 from opentelemetry import trace
 
@@ -81,8 +81,8 @@ class Logger:
                 "schemaUrl": None,
             },
             "severityText": level,
-            "severityNumber": Severity.get(level, 1),
-            # "message": message,
+            "severityNumber": Severity[level].value,
+            "message": message,
             "eventName": event_name,
             "timestamp": datetime.utcnow().isoformat(),
             **self.base,

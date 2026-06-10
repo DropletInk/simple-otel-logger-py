@@ -1,0 +1,240 @@
+Metadata-Version: 2.4
+Name: simple-otel-logger-py
+Version: 0.1.0
+Summary: Add your description here
+Requires-Python: >=3.13
+Description-Content-Type: text/markdown
+Requires-Dist: opentelemetry-api>=1.42.1
+Requires-Dist: opentelemetry-exporter-otlp>=1.42.1
+Requires-Dist: opentelemetry-instrumentation-fastapi>=0.63b1
+Requires-Dist: opentelemetry-instrumentation-celery>=0.63b1
+Requires-Dist: opentelemetry-instrumentation-logging>=0.63b1
+Requires-Dist: opentelemetry-sdk>=1.42.1
+Requires-Dist: prometheus-client>=0.25.0
+Requires-Dist: ruff>=0.15.15
+Requires-Dist: structlog>=25.5.0
+Requires-Dist: uvicorn>=0.49.0
+Requires-Dist: fastapi>=0.136.3
+Requires-Dist: opentelemetry-exporter-prometheus>=0.63b1
+Requires-Dist: dotenv>=0.9.9
+Requires-Dist: pytest>=9.0.3
+
+# simple-otel-logger-py
+
+## installation
+
+if using **uv** \
+
+```bash
+uv add git+https://github.com/DropletInk/simple-otel-logger-py.git
+```
+
+## Requirements
+
+```bash
+Python 3.9+
+opentelemetry-api
+```
+
+## Environment Configuration
+
+```js
+Create a .env file :
+
+ENVIRONMENT = development (or deployment)
+
+// for traces export 
+OTEL_EXPORTER_TRACE_ENDPOINT = http://localhost:4318/v1/traces
+
+// for logs export
+OTEL_EXPORTER_LOG_ENDPOINT = http://localhost:4318/v1/metrics
+
+// for metrics export
+OTEL_EXPORTER_METRICS_ENDPOINT = http://localhost:4318/v1/logs
+
+```
+
+## Basic Usage
+
+```py
+from Pylog import get_logger 
+
+logger = get_logger(service_name="Post-doc-service")
+
+logger.info("Home endpoint called",event_name="home_request")
+logger.warn(message="I am inside the new_message function",event_name="new_message")
+
+```
+
+## For Tracing with the help of Open-Telemetry
+
+Create app for FastApi then import
+
+```py
+from my_logger import get_logger
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+logger = get_logger()
+
+app = FastAPI()
+FastAPIInstrumentor().instrument_app(app)
+```
+
+Output
+
+```bash
+{
+    "resources": {
+        "attributes": {
+            "service": "Post-doc-service"
+        }   
+    },
+    "instrumentationScope": {
+        "name": "simple-otel-logger",
+        "version": "1.0.0",
+        "schemaUrl": null
+    },
+    "severityText": "INFO",
+    "severityNumber": 9,
+    "eventName": "home_request",
+    "timestamp": "2026-06-09T06:27:16.489916Z",
+    "trace_id": "f03d69f53c59d70d33e9519b5e38c383",
+    "span_id": "a94029760493094a",
+    "trace_flags": "03",
+    "attributes": {},
+    "event": "Home endpoint called"
+}
+```
+
+## For the middlewares
+
+```py
+
+from Pylog import LoggingMiddleware
+
+
+app.add_middleware(
+    LoggingMiddleware,
+    logger=logger,
+    environment="development",
+    request_data=lambda req: {
+        "method": req.method,
+        "path": req.url.path,
+        "query_params": str(req.query_params),
+        "client_ip": req.client.host if req.client else None,
+        "url": str(req.url),
+        "ip_address": req.client.host if req.client else None,
+        "user_agent": req.headers.get("user-agent"),
+    },
+    response_data=lambda req, res: {
+        "status_code": res.status_code,
+        "url": str(req.url),
+        "handler": req.scope.get("endpoint").__name__ if req.scope.get("endpoint") else None,
+    },
+)
+
+
+```
+
+## Example Output
+
+### Request
+
+```bash
+{
+    "resources": {
+        "attributes": {
+            "service": "Post-doc-service"
+        }
+    },
+    "instrumentationScope": {
+        "name": "simple-otel-logger",
+        "version": "1.0.0",
+        "schemaUrl": null
+    },
+    "severityText": "INFO",
+    "severityNumber": 9,
+    "eventName": "HTTP request Attempt",
+    "timestamp": "2026-06-09T06:27:16.489454Z",
+    "trace_id": "f03d69f53c59d70d33e9519b5e38c383",
+    "span_id": "a94029760493094a",
+    "trace_flags": "03",
+    "attributes": {
+        "request_id": "f03d69f53c59d70d33e9519b5e38c383",
+        "environment": "development",
+        "method": "GET",
+        "path": "/",
+        "query_params": "",
+        "client_ip": "127.0.0.1",
+        "url": "http://127.0.0.1:8000/",
+        "ip_address": "127.0.0.1",
+        "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.123.0 Chrome/148.0.7778.97 Electron/42.2.0 Safari/537.36"
+    },
+    "event": "HTTP request received"
+}
+```
+
+### Reponse
+
+```bash
+{
+    "resources": {
+        "attributes": {
+            "service": "Post-doc-service"
+        }
+    },
+    "instrumentationScope": {
+        "name": "simple-otel-logger",
+        "version": "1.0.0",
+        "schemaUrl": null
+    },
+    "severityText": "INFO",
+    "severityNumber": 9,
+    "eventName": "HTTP request Success",
+    "timestamp": "2026-06-09T06:27:16.490132Z",
+    "trace_id": "f03d69f53c59d70d33e9519b5e38c383",
+    "span_id": "a94029760493094a",
+    "trace_flags": "03",
+    "attributes": {
+        "request_id": "f03d69f53c59d70d33e9519b5e38c383",
+        "environment": "development",
+        "duration": 0.0009,
+        "status_code": 200,
+        "url": "http://127.0.0.1:8000/",
+        "handler": "home"
+    },
+    "event": "HTTP response sent"
+}
+```
+### Creating Custom spans to  add in logs 
+
+Example for file system 
+```py
+from Pylog import custom_span
+
+def read_file(filename: str):
+
+    with custom_span(
+        "file.read",
+        {
+            "file.name": filename,
+        },
+    ) as span:
+
+        span.add_event("file_opened")
+
+        with open(filename, "r") as f:
+            content = f.read()
+
+        span.add_event("file_closed")
+
+        return content
+
+
+```
+## Features
+
+### This provides observability for
+
+- Microservices and Production grade debugging
+- Custom Spans can be added
+- Middleware handeling is done 

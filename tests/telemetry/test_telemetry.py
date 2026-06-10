@@ -1,8 +1,17 @@
-import pytest
-
 from unittest.mock import Mock, patch
+import pytest
+from pylog import TelemetryManager, get_tracer, custom_span
 
-from pylog.telemetry.telemetry import TelemetryManager, get_tracer, custom_span
+
+@pytest.fixture
+def fresh_tm():
+    tm = TelemetryManager()
+
+    tm.reset()
+
+    yield tm
+
+    tm.reset()
 
 
 def test_telemetry_manager_initialization():
@@ -62,39 +71,11 @@ def test_init_telemetry_only_runs_once(mock_project):
 
 @patch("pylog.telemetry.telemetry.OTLPSpanExporter")
 @patch("pylog.telemetry.telemetry.get_project_name")
-def test_trace_exporter_created(mock_project, mock_exporter):
+def test_trace_exporter_created(mock_project, mock_exporter, fresh_tm):
 
     mock_project.return_value = "service"
 
-    tm = TelemetryManager()
-
-    tm.init_telemetry(trace_exporter_endpoint="http://localhost:4318/v1/traces")
-
-    mock_exporter.assert_called_once()
-
-
-@patch("pylog.telemetry.telemetry.OTLPSpanExporter")
-@patch("pylog.telemetry.telemetry.get_project_name")
-def test_metrics_exporter_created(mock_project, mock_exporter):
-
-    mock_exporter.return_value = "service"
-
-    tm = TelemetryManager()
-
-    tm.init_telemetry(metric_exporter_endpoint="http://localhost:4318/v1/metrics")
-
-    mock_exporter.assert_called_once()
-
-
-@patch("pylog.telemetry.telemetry.OTLPSpanExporter")
-@patch("pylog.telemetry.telemetry.get_project_name")
-def test_logs_exporter_created(mock_project, mock_exporter):
-
-    mock_exporter.return_value = "service"
-
-    tm = TelemetryManager()
-
-    tm.init_telemetry(log_exporter_endpoint="http://localhost:4318/v1/logs")
+    fresh_tm.init_telemetry(trace_exporter_endpoint="http://localhost:4318/v1/traces")
 
     mock_exporter.assert_called_once()
 

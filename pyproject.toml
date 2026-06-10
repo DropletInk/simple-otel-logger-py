@@ -19,7 +19,16 @@ dependencies = [
     "opentelemetry-exporter-prometheus>=0.63b1",
     "dotenv>=0.9.9",
     "pytest>=9.0.3",
+    "pytest-mock>=3.15.1",
+    "pytest-asyncio>=1.4.0",
 ]
 
 [tool.ruff]
 line-length = 120
+
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

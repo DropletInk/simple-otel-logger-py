@@ -1,5 +1,6 @@
 from pylog.types.types import LogRecord, LoggerOptions, Severity
 
+
 def test_severity_values():
     assert Severity.DEBUG == 5
     assert Severity.INFO == 9

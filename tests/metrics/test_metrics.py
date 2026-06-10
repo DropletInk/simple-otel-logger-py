@@ -1,9 +1,9 @@
 from unittest.mock import Mock, patch
 
-from pylog.metrics import counter, histogram, create_counter, _metrics
+from pylog import counter, histogram, create_counter, _metrics
 
 
-@patch("pylog.metrics.metrics.get_meter")
+@patch("pylog.metrics.metrics.TelemetryManager.get_meter")
 def test_counter_creats_metrics(mock_get_meter):
     _metrics.clear()
 
@@ -20,7 +20,7 @@ def test_counter_creats_metrics(mock_get_meter):
     fake_meter.create_counter.assert_called_once()
 
 
-@patch("pylog.metrics.metrics.get_meter")
+@patch("pylog.metrics.metrics.TelemetryManager.get_meter")
 def test_counter_reuses_existing_metric(mock_get_meter):
     _metrics.clear()
 
@@ -37,7 +37,7 @@ def test_counter_reuses_existing_metric(mock_get_meter):
     fake_meter.create_counter.assert_called_once()
 
 
-@patch("pylog.metrics.metrics.get_meter")
+@patch("pylog.metrics.metrics.TelemetryManager.get_meter")
 def test_histogram_creates_metric(mock_get_meter):
     _metrics.clear()
 
@@ -54,7 +54,7 @@ def test_histogram_creates_metric(mock_get_meter):
     fake_meter.create_histogram.assert_called_once()
 
 
-@patch("pylog.metrics.metrics.get_meter")
+@patch("pylog.metrics.metrics.TelemetryManager.get_meter")
 def test_histogram_reuses_existing_metric(mock_get_meter):
     _metrics.clear()
 
@@ -71,7 +71,7 @@ def test_histogram_reuses_existing_metric(mock_get_meter):
     fake_meter.create_histogram.assert_called_once()
 
 
-@patch("pylog.metrics.metrics.get_meter")
+@patch("pylog.metrics.metrics.TelemetryManager.get_meter")
 def test_create_counter_always_creates_new_counter(mock_get_meter):
     fake_meter = Mock()
 
@@ -83,7 +83,7 @@ def test_create_counter_always_creates_new_counter(mock_get_meter):
     assert fake_meter.create_counter.call_count == 2
 
 
-@patch("pylog.metrics.metrics.get_meter")
+@patch("pylog.metrics.metrics.TelemetryManager.get_meter")
 def test_create_counter_custom_values(mock_get_meter):
     fake_meter = Mock()
 

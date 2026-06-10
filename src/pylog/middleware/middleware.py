@@ -4,7 +4,7 @@ from typing import Callable
 
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from logger import get_otel_context
+from pylog.logger import get_otel_context
 
 
 class LoggingMiddleware(BaseHTTPMiddleware):

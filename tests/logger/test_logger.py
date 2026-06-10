@@ -1,6 +1,6 @@
-import pytest
 from unittest.mock import Mock, patch
 from pylog import Logger, get_logger, get_otel_context, configure_structlog, traced
+import pytest
 
 
 # Testing Logger Initialization
@@ -114,9 +114,9 @@ def test_build_record_contains_attributes():
 #  contains base attributes or not
 def test_build_record_contains_base_attributes():
 
-    logger = Logger()
+    logger = Logger(base={"environment": "development"})
 
-    record = logger.build_record(base={"environment": "development"})
+    record = logger.build_record(level="INFO", message="test")
 
     assert record["environment"] == "development"
 
@@ -128,7 +128,7 @@ def test_log_calls_structlog_info():
 
     logger.logger = Mock()
 
-    logger.log(level="INFO", messages="hello")
+    logger.log(level="INFO", message="hello")
 
     logger.logger.info.assert_called_once()
 
@@ -223,7 +223,7 @@ async def test_traced_decorator(mock_tracer):
 
     @traced()
     async def sample_func():
-        return "all ok "
+        return "all ok"
 
     result = await sample_func()
 

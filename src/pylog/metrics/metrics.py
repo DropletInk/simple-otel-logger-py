@@ -1,11 +1,11 @@
-from pylog.telemetry import get_meter
+from pylog.telemetry import TelemetryManager
 
 _metrics = {}
 
 
 #  counter
 def counter(name: str, description: str = "This ia a counter function", unit: str = "1"):
-    meter = get_meter()
+    meter = TelemetryManager().get_meter()
 
     if name not in _metrics:
         _metrics[name] = meter.create_counter(
@@ -19,7 +19,7 @@ def counter(name: str, description: str = "This ia a counter function", unit: st
 
 #  histogram
 def histogram(name: str, description: str = "This is a histogram function", unit: str = "ms"):
-    meter = get_meter()
+    meter = TelemetryManager().get_meter()
 
     if name not in _metrics:
         _metrics[name] = meter.create_histogram(
@@ -35,7 +35,7 @@ def histogram(name: str, description: str = "This is a histogram function", unit
 
 
 def create_counter(name: str, description: str = "This is a counter function", unit: str = "1"):
-    meter = get_meter()
+    meter = TelemetryManager().get_meter()
     return meter.create_counter(
         name=name,
         description=description,

@@ -18,10 +18,17 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 
 class TelemetryManager:
-    def __init__(self):
-        self._started = False
-        self._meter = None
-        self._service_name = None
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+
+            cls._instance._started = False
+            cls._instance._meter = None
+            cls._instance._service_name = None
+
+        return cls._instance
 
     def init_telemetry(
         self,
@@ -31,10 +38,12 @@ class TelemetryManager:
         log_exporter_endpoint: str | None = None,
         environment: str = "development",
     ):
-        service_name = get_project_name()
-        self._service_name = service_name
         if self._started:
             return
+
+        service_name = service_name or get_project_name()
+
+        self._service_name = service_name
 
         resource = Resource.create(
             {
@@ -43,27 +52,19 @@ class TelemetryManager:
             }
         )
 
-        # For Traces
-
-        tracer_provider = TracerProvider(
-            resource=resource,
-        )
+        # Traces
+        tracer_provider = TracerProvider(resource=resource)
 
         if trace_exporter_endpoint:
-            trace_exporter = OTLPSpanExporter(
-                endpoint=trace_exporter_endpoint,
-            )
+            trace_exporter = OTLPSpanExporter(endpoint=trace_exporter_endpoint)
 
             tracer_provider.add_span_processor(BatchSpanProcessor(trace_exporter))
 
         trace.set_tracer_provider(tracer_provider)
 
-        # For metrics
-
+        # Metrics
         if metric_exporter_endpoint:
-            metric_exporter = OTLPMetricExporter(
-                endpoint=metric_exporter_endpoint,
-            )
+            metric_exporter = OTLPMetricExporter(endpoint=metric_exporter_endpoint)
 
             metric_reader = PeriodicExportingMetricReader(
                 exporter=metric_exporter,
@@ -77,9 +78,12 @@ class TelemetryManager:
 
             metrics.set_meter_provider(meter_provider)
 
-            self._meter = metrics.get_meter(service_name, version="1.0.0")
+            self._meter = metrics.get_meter(
+                service_name,
+                version="1.0.0",
+            )
 
-        # For   logs
+        # Logs
         logger_provider = LoggerProvider(
             resource=resource,
         )
@@ -93,6 +97,19 @@ class TelemetryManager:
             raise RuntimeError("Telemetry has not been initialized. Please call init_telemetry first.")
 
         return self._meter
+
+    def reset(self):
+        self._started = False
+        self._meter = None
+        self._service_name = None
+
+    @property
+    def started(self):
+        return self._started
+
+    @property
+    def service_name(self):
+        return self._service_name
 
 
 # tracer
