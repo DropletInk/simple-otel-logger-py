@@ -77,7 +77,7 @@ class TelemetryManager:
 
             metrics.set_meter_provider(meter_provider)
 
-            _meter = metrics.get_meter(service_name, version="1.0.0")
+            self._meter = metrics.get_meter(service_name, version="1.0.0")
 
         # For   logs
         logger_provider = LoggerProvider(

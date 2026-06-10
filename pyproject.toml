@@ -18,6 +18,7 @@ dependencies = [
     "fastapi>=0.136.3",
     "opentelemetry-exporter-prometheus>=0.63b1",
     "dotenv>=0.9.9",
+    "pytest>=9.0.3",
 ]
 
 [tool.ruff]
