@@ -2,7 +2,7 @@ from opentelemetry import _logs, metrics, trace
 from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from contextlib import contextmanager
-from .project import get_project_name
+from project import get_project_name
 
 # logs
 from opentelemetry.sdk._logs import LoggerProvider

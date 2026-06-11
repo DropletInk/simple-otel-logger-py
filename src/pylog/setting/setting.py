@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from pylog.telemetry import TelemetryManager
 
-PY_ENV = os.getenv("PY_ENV", "development")
+LOGGER_ENV = os.getenv("LOGGER_ENV", "development")
 
 OTEL_EXPORTER_TRACE_ENDPOINT = os.getenv("OTEL_EXPORTER_TRACE_ENDPOINT", "None")
 
@@ -18,5 +18,5 @@ def initialise_service():
         OTEL_EXPORTER_TRACE_ENDPOINT,
         OTEL_EXPORTER_METRICS_ENDPOINT,
         OTEL_EXPORTER_LOG_ENDPOINT,
-        PY_ENV,
+        LOGGER_ENV,
     )
