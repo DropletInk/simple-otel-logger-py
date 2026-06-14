@@ -1,0 +1,16 @@
+README.md
+pyproject.toml
+src/pylog/__init__.py
+src/pylog/logger/__init__.py
+src/pylog/logger/logger.py
+src/pylog/middleware/__init__.py
+src/pylog/middleware/middleware.py
+src/pylog/setting/__init__.py
+src/pylog/setting/setting.py
+src/pylog/telemetry/__init__.py
+src/pylog/telemetry/telemetry.py
+src/simple_otel_logger_py.egg-info/PKG-INFO
+src/simple_otel_logger_py.egg-info/SOURCES.txt
+src/simple_otel_logger_py.egg-info/dependency_links.txt
+src/simple_otel_logger_py.egg-info/requires.txt
+src/simple_otel_logger_py.egg-info/top_level.txt

@@ -1,72 +1,30 @@
-import time
 import uuid
-from typing import Callable
+import structlog
+from pylog.logger import log_configure
+import time
+from typing import Callable,Any
+def add_request_id()-> uuid.UUID:
+    request_id = uuid.uuid4()
 
-from starlette.middleware.base import BaseHTTPMiddleware
+    structlog.contextvars.bind_contextvars(request_id=request_id)
 
-from pylog.logger import get_otel_context
+    return request_id
 
-
-class LoggingMiddleware(BaseHTTPMiddleware):
-    def __init__(
-        self,
-        app,
-        logger,
-        environment: str = "development",
-        request_data: Callable | None = None,
-        response_data: Callable | None = None,
-    ):
-        super().__init__(app)
-
-        self.logger = logger
-        self.environment = environment
-        self.request_data = request_data
-        self.response_data = response_data
-
-    async def dispatch(
-        self,
-        request,
-        call_next,
-    ):
-        header_request_id = request.headers.get("x-request-id")
-
-        otel_context = get_otel_context()
-
-        request_id = header_request_id or otel_context.get("trace_id") or str(uuid.uuid4())
-
+log_configure()
+def create_log_middleware(logger, request_data:Callable[[Any],dict], response_data:Callable[[Any],dict]) ->Callable[[Any],Callable[[Any]]]:
+    async def log_middleware(request:Any, call_next:Callable[[Any],dict]):
         start_time = time.time()
+        req_data = request_data(request)
+        add_request_id()
 
-        request_payload = self.request_data(request) if self.request_data else {}
-
-        self.logger.info(
-            "HTTP request received",
-            event_name="HTTP request Attempt",
-            request_id=request_id,
-            environment=self.environment,
-            **request_payload,
-        )
+        logger.info("Request Started", attributes=req_data)
 
         response = await call_next(request)
 
-        duration = round(time.time() - start_time, 4)
-
-        if response.status_code >= 500:
-            self.logger.error(
-                "HTTP error response",
-                event_name="HTTP request Error",
-                request_id=request_id,
-                status_code=response.status_code,
-            )
-
-        response_payload = self.response_data(request, response) if self.response_data else {}
-
-        self.logger.info(
-            "HTTP response sent",
-            event_name="HTTP request Success",
-            request_id=request_id,
-            environment=self.environment,
-            duration=duration,
-            **response_payload,
-        )
+        duration = time.time() - start_time
+        res_data = response_data(request, response)
+        logger.info("Response Received", attributes=res_data, duration=duration)
 
         return response
+
+    return log_middleware

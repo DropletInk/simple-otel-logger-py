@@ -1,91 +1,38 @@
+from unittest.mock import patch, MagicMock
+import uuid
 import pytest
-from unittest.mock import Mock, AsyncMock
-
-from starlette.requests import Request
-from starlette.responses import Response
-
-from pylog.middleware.middleware import LoggingMiddleware
+from pylog.middleware import add_request_id, create_log_middleware
 
 
-# Hel per function
-def create_request(headers=None):
-    scope = {
-        "type": "http",
-        "method": "GET",
-        "path": "/",
-        "headers": headers or [],
-    }
-
-    return Request(scope)
+# creating a mopck object for the bind_contextvars
+#  to test the the add_request_idf function
+@patch("pylog.middleware.middleware.structlog.contextvars.bind_contextvars")
+def test_add_request_id(mock_bind):
+    request_id = add_request_id()
+    assert isinstance(request_id, uuid.UUID)
+    mock_bind.assert_called_once_with(request_id=request_id)
 
 
+#  Testing  the middleware
+# using MagicMock for the logger object
 @pytest.mark.asyncio
-async def test_request_log_generated():
+async def test_log_middleware():
 
-    logger = Mock()
+    logger = MagicMock()
+    request = MagicMock()
+    response = MagicMock()
 
-    middleware = LoggingMiddleware(
-        app=Mock(),
-        logger=logger,
-    )
+    def request_data(requ):
+        return {"path": "/users"}
 
-    request = create_request()
+    def response_data(req, res):
+        return {"status_code": 200}
 
-    response = Response(status_code=200)
+    async def call_next(requ):
+        return response
 
-    call_next = AsyncMock(return_value=response)
+    middleware = create_log_middleware(logger, request_data, response_data)
 
-    await middleware.dispatch(
-        request,
-        call_next,
-    )
+    res = await middleware(request, call_next)
 
-    assert logger.info.called
-
-
-@pytest.mark.asyncio
-async def test_response_log_generated():
-
-    logger = Mock()
-
-    middleware = LoggingMiddleware(
-        app=Mock(),
-        logger=logger,
-    )
-
-    request = create_request()
-
-    response = Response(status_code=200)
-
-    call_next = AsyncMock(return_value=response)
-
-    await middleware.dispatch(
-        request,
-        call_next,
-    )
-
-    assert logger.info.call_count == 2
-
-
-@pytest.mark.asyncio
-async def test_error_log_for_server_error():
-
-    logger = Mock()
-
-    middleware = LoggingMiddleware(
-        app=Mock(),
-        logger=logger,
-    )
-
-    request = create_request()
-
-    response = Response(status_code=500)
-
-    call_next = AsyncMock(return_value=response)
-
-    await middleware.dispatch(
-        request,
-        call_next,
-    )
-
-    logger.error.assert_called_once()
+    assert res == response

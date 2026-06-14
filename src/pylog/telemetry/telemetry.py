@@ -1,132 +1,42 @@
-from opentelemetry import _logs, metrics, trace
-from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from contextlib import contextmanager
-from project import get_project_name
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry import trace
 
-# logs
-from opentelemetry.sdk._logs import LoggerProvider
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 
-# metrics
+from opentelemetry import metrics
+from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
-from opentelemetry.sdk.resources import Resource
-
-# traces
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from importlib.metadata import packages_distributions
 
 
-class TelemetryManager:
-    _instance = None
+resource = Resource.create(attributes={SERVICE_NAME: packages_distributions()["pylog"][0]})
 
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
+tracerProvider = TracerProvider(resource=resource)
 
-            cls._instance._started = False
-            cls._instance._meter = None
-            cls._instance._service_name = None
-
-        return cls._instance
-
-    def init_telemetry(
-        self,
-        service_name: str | None = None,
-        trace_exporter_endpoint: str | None = None,
-        metric_exporter_endpoint: str | None = None,
-        log_exporter_endpoint: str | None = None,
-        environment: str = "development",
-    ):
-        if self._started:
-            return
-
-        service_name = service_name or get_project_name()
-
-        self._service_name = service_name
-
-        resource = Resource.create(
-            {
-                "service.name": service_name,
-                "deployment.environment": environment,
-            }
-        )
-
-        # Traces
-        tracer_provider = TracerProvider(resource=resource)
-
-        if trace_exporter_endpoint:
-            trace_exporter = OTLPSpanExporter(endpoint=trace_exporter_endpoint)
-
-            tracer_provider.add_span_processor(BatchSpanProcessor(trace_exporter))
-
-        trace.set_tracer_provider(tracer_provider)
-
-        # Metrics
-        if metric_exporter_endpoint:
-            metric_exporter = OTLPMetricExporter(endpoint=metric_exporter_endpoint)
-
-            metric_reader = PeriodicExportingMetricReader(
-                exporter=metric_exporter,
-                export_interval_millis=5000,
-            )
-
-            meter_provider = MeterProvider(
-                resource=resource,
-                metric_readers=[metric_reader],
-            )
-
-            metrics.set_meter_provider(meter_provider)
-
-            self._meter = metrics.get_meter(
-                service_name,
-                version="1.0.0",
-            )
-
-        # Logs
-        logger_provider = LoggerProvider(
-            resource=resource,
-        )
-
-        _logs.set_logger_provider(logger_provider)
-
-        self._started = True
-
-    def get_meter(self):
-        if self._meter is None:
-            raise RuntimeError("Telemetry has not been initialized. Please call init_telemetry first.")
-
-        return self._meter
-
-    def reset(self):
-        self._started = False
-        self._meter = None
-        self._service_name = None
-
-    @property
-    def started(self):
-        return self._started
-
-    @property
-    def service_name(self):
-        return self._service_name
+trace.set_tracer_provider(TracerProvider())
 
 
-# tracer
-def get_tracer(name: str = "simple-otel-logger"):
-    return trace.get_tracer(name)
+provider = trace.get_tracer_provider()
 
 
-@contextmanager
-def custom_span(
-    name: str,
-    attributes: dict | None = None,
-):
-    tracer = trace.get_tracer("simple-otel-logger")
+def get_tracer():
+    if not isinstance(provider, TracerProvider):
+        trace.set_tracer_provider(TracerProvider())
+    return trace.get_tracer(__name__)
 
-    with tracer.start_as_current_span(name) as span:
-        if attributes:
-            for key, value in attributes.items():
-                span.set_attribute(key, value)
 
-        yield span
+def add_traces_span_exporter(OTLP_Span_exporter_endpoint=None):
+    if OTLP_Span_exporter_endpoint:
+        processor = BatchSpanProcessor(OTLPSpanExporter(endpoint=OTLP_Span_exporter_endpoint))
+        provider.add_span_processor(processor)
+        trace.set_tracer_provider(provider)
+
+
+def add_metric_exporter(OTLP_Metric_exporter_endpoint=None):
+    if OTLP_Metric_exporter_endpoint:
+        reader = PeriodicExportingMetricReader(OTLPMetricExporter(endpoint=OTLP_Metric_exporter_endpoint))
+        meterProvider = MeterProvider(resource=resource, metric_readers=[reader])
+        metrics.set_meter_provider(meterProvider)

@@ -1,22 +1,15 @@
 import os
-
-from dotenv import load_dotenv
-from pylog.telemetry import TelemetryManager
-
-LOGGER_ENV = os.getenv("LOGGER_ENV", "development")
-
-OTEL_EXPORTER_TRACE_ENDPOINT = os.getenv("OTEL_EXPORTER_TRACE_ENDPOINT", "None")
-
-OTEL_EXPORTER_LOG_ENDPOINT = os.getenv("OTEL_EXPORTER_LOG_ENDPOINT", "None")
-
-OTEL_EXPORTER_METRICS_ENDPOINT = os.getenv("OTEL_EXPORTER_METRICS_ENDPOINT", "None")
+from pylog.telemetry import add_metric_exporter, add_traces_span_exporter
 
 
-def initialise_service():
-    load_dotenv()
-    TelemetryManager().init_telemetry(
-        OTEL_EXPORTER_TRACE_ENDPOINT,
-        OTEL_EXPORTER_METRICS_ENDPOINT,
-        OTEL_EXPORTER_LOG_ENDPOINT,
-        LOGGER_ENV,
-    )
+SIMPLE_OTEL_LOGGER_ENV = os.getenv("SIMPLE_OTEL_LOGGER_ENV", "Production")
+
+OTEL_EXPORTER_TRACE_ENDPOINT = os.gotenv("OTEL_EXPORTER_TRACE_ENDPOINT", None)
+
+OTEL_EXPORTER_METRIC_ENDPOINT = os.gotenv("OTEL_EXPORTER_METRIC_ENDPOINT", None)
+
+OTEL_EXPORTER_LOGS_ENDPOINT = os.gotenv("OTEL_EXPORTER_LOGS_ENDPOINT", None)
+
+
+add_metric_exporter(OTEL_EXPORTER_METRIC_ENDPOINT)
+add_traces_span_exporter(OTEL_EXPORTER_TRACE_ENDPOINT)
