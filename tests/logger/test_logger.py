@@ -20,7 +20,11 @@ def test_otel_tags():
 
 
 def test_log_organiser():
-    event = {"resources": {"service_name": "test"}, "instrumentationScope": {"name": "test"}, "event": "hello"}
+    event = {
+        "resources": {"service_name": "test"},
+        "instrumentationScope": {"name": "test"},
+        "event": "hello",
+    }
 
     result = log_organiser(None, None, event)
     assert result["resources"]["service_name"] == "test"

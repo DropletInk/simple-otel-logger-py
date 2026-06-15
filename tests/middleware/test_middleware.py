@@ -17,7 +17,6 @@ def test_add_request_id(mock_bind):
 # using MagicMock for the logger object
 @pytest.mark.asyncio
 async def test_log_middleware():
-
     logger = MagicMock()
     request = MagicMock()
     response = MagicMock()
