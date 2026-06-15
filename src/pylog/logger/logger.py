@@ -127,7 +127,6 @@ def traced(span_name: str | None = None):
 
 
 class Logger:
-    _initialized = False
 
     def __init__(self, service_name=packages_distributions()["pylog"][0]):
         get_tracer()
