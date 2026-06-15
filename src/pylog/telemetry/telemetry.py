@@ -28,13 +28,13 @@ trace.set_tracer_provider(TracerProvider())
 provider = trace.get_tracer_provider()
 
 
-def get_tracer():
+def get_tracer() -> object:
     if not isinstance(provider, TracerProvider):
         trace.set_tracer_provider(TracerProvider())
     return trace.get_tracer(__name__)
 
 
-def add_traces_span_exporter(OTLP_Span_exporter_endpoint=None):
+def add_traces_span_exporter(OTLP_Span_exporter_endpoint=None) -> None:
     if OTLP_Span_exporter_endpoint:
         processor = BatchSpanProcessor(
             OTLPSpanExporter(endpoint=OTLP_Span_exporter_endpoint)
@@ -43,7 +43,7 @@ def add_traces_span_exporter(OTLP_Span_exporter_endpoint=None):
         trace.set_tracer_provider(provider)
 
 
-def add_metric_exporter(OTLP_Metric_exporter_endpoint=None):
+def add_metric_exporter(OTLP_Metric_exporter_endpoint=None) -> None:
     if OTLP_Metric_exporter_endpoint:
         reader = PeriodicExportingMetricReader(
             OTLPMetricExporter(endpoint=OTLP_Metric_exporter_endpoint)
