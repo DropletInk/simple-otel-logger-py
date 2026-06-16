@@ -12,7 +12,7 @@ from pylog.telemetry import get_tracer
 tracer = trace.get_tracer("Mytracer")
 
 def get_project_name():
-    project_name = metadata.version("simple-otel-logger-py")
+    project_name = metadata.version("pylog")
     return project_name
 
 class Logger(Protocol):
