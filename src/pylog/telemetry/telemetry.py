@@ -20,7 +20,7 @@ resource = Resource.create(
 
 tracerProvider = TracerProvider(resource=resource)
 
-trace.set_tracer_provider(TracerProvider())
+trace.set_tracer_provider(tracerProvider)
 
 
 provider = trace.get_tracer_provider()
