@@ -4,15 +4,16 @@ from opentelemetry import trace
 from functools import wraps
 import inspect
 from typing import TypedDict, Protocol, Any
-
-# from importlib.metadata import packages_distributions
+from importlib.metadata import metadata
 from pylog.telemetry import get_tracer
-from functools import cached_property
+# from functools import cached_property
 
-import sys
+# import sys
 
 tracer = trace.get_tracer("Mytracer")
 
+def get_package_name():
+    return metadata("simple-otel-logger-py")["Name"]
 
 class Logger(Protocol):
     def info(
@@ -161,11 +162,7 @@ class ConsoleLogger:
     def __init__(self, service_name: str | None = None):
         get_tracer()
         log_configure()
-        if service_name is None:
-            self.service_name = self.package_name
-        else:
-            self.service_name = service_name
-
+        self.service_name = get_package_name()
         resources = {"service_name": self.service_name}
         instrumentationScope = {
             "name": "simple-otel-logger",
@@ -174,10 +171,6 @@ class ConsoleLogger:
         self.logger = structlog.get_logger().bind(
             resources=resources, instrumentationScope=instrumentationScope
         )
-
-    @cached_property
-    def package_name(self) -> str | None:
-        return sys.modules[__name__].__package__
 
     def info(self, message, attributes=None, **kwargs):
         if attributes is not None:
