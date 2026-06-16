@@ -7,6 +7,7 @@ from .logger import (
     log_organiser,
     rename_level,
     traced,
+    get_project_name,
 )
 
 
@@ -19,4 +20,5 @@ __all__ = [
     "log_organiser",
     "rename_level",
     "traced",
+    "get_project_name",
 ]

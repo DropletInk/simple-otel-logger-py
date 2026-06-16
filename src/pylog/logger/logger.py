@@ -9,11 +9,10 @@ from pylog.telemetry import get_tracer
 # from functools import cached_property
 from pathlib import Path
 
+
 import sys
 
 tracer = trace.get_tracer("Mytracer")
-
-
 
 def get_project_name():
     main_file = Path(sys.modules["__main__"].__file__).resolve()  # ty:ignore[invalid-argument-type]
