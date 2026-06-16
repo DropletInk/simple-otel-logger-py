@@ -2,11 +2,45 @@ import structlog
 from opentelemetry import trace
 from functools import wraps
 import inspect
-from typing import TypedDict
+from typing import TypedDict, Protocol, Any, Optional
 from importlib.metadata import packages_distributions
 from pylog.telemetry import get_tracer
 
 tracer = trace.get_tracer("Mytracer")
+
+
+class LoggerProtocol(Protocol):
+    def info(
+        self,
+        message: str,
+        attributes: Optional[dict[str, Any]] = None,
+        **kwargs: Any,
+    ) -> None:
+        pass
+
+    def error(
+        self,
+        message: str,
+        attributes: Optional[dict[str, Any]] = None,
+        **kwargs: Any,
+    ) -> None:
+        pass
+
+    def warning(
+        self,
+        message: str,
+        attributes: Optional[dict[str, Any]] = None,
+        **kwargs: Any,
+    ) -> None:
+        pass
+
+    def debug(
+        self,
+        message: str,
+        attributes: Optional[dict[str, Any]] = None,
+        **kwargs: Any,
+    ) -> None:
+        pass
 
 
 class SpanInfo(TypedDict):
@@ -20,7 +54,7 @@ class EventDict(TypedDict):
 
 
 def add_open_telemetry_spans(
-    logger: object, method_name: str, event_dict: EventDict
+    logger: LoggerProtocol, method_name: str, event_dict: EventDict
 ) -> EventDict:
     span = trace.get_current_span()
     if not span.is_recording():
@@ -38,7 +72,7 @@ def add_open_telemetry_spans(
 
 
 def otel_tags(
-    logger: object, method_name: str, event_dict: EventDict
+    logger: LoggerProtocol, method_name: str, event_dict: EventDict
 ) -> EventDict:
     event_dict["instrumentationScope"] = {
         "name": "simple-otel-logger",
@@ -48,7 +82,7 @@ def otel_tags(
 
 
 def log_organiser(
-    logger: object, method_name: str, event_dict: EventDict
+    logger: LoggerProtocol, method_name: str, event_dict: EventDict
 ) -> dict:
     return {
         "resources": event_dict.get("resources"),
@@ -84,7 +118,7 @@ def log_configure() -> None:
 
 
 def rename_level(
-    logger: object, method_name: str, event_dict: EventDict
+    logger: LoggerProtocol, method_name: str, event_dict: EventDict
 ) -> EventDict:
     level_mapping = {
         "DEBUG": 5,
