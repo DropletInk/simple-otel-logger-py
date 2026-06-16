@@ -4,42 +4,16 @@ from opentelemetry import trace
 from functools import wraps
 import inspect
 from typing import TypedDict, Protocol, Any
-# from importlib.metadata import packages_distributions
+from importlib import metadata
 from pylog.telemetry import get_tracer
 # from functools import cached_property
-from pathlib import Path
 
-
-import sys
 
 tracer = trace.get_tracer("Mytracer")
 
 def get_project_name():
-    main_file = Path(sys.modules["__main__"].__file__).resolve()  # ty:ignore[invalid-argument-type]
-
-    for parent in [main_file.parent, *main_file.parents]:
-        pyproject = parent / "pyproject.toml"
-
-        if pyproject.exists():
-            in_project_section = False
-
-            with pyproject.open() as f:
-                for line in f:
-                    line = line.strip()
-
-                    if line == "[project]":
-                        in_project_section = True
-                        continue
-
-                    if in_project_section and line.startswith("["):
-                        break
-
-                    if in_project_section and line.startswith("name"):
-                        return (
-                            line.split("=", 1)[1].strip().strip('"').strip("'")
-                        )
-
-    return None
+    project_name = metadata.version("simple-otel-logger-py")
+    return project_name
 
 class Logger(Protocol):
     def info(
