@@ -4,16 +4,21 @@ from opentelemetry import trace
 from functools import wraps
 import inspect
 from typing import TypedDict, Protocol, Any
-from importlib.metadata import metadata
+from importlib.metadata import packages_distributions
 from pylog.telemetry import get_tracer
 # from functools import cached_property
 
-# import sys
+import sys
 
 tracer = trace.get_tracer("Mytracer")
 
 def get_package_name():
-    return metadata("simple-otel-logger-py")["Name"]
+    main_module = sys.modules["__main__"].__package__
+
+    if main_module:
+        dist = packages_distributions().get(main_module)
+        print(dist)
+    return dist
 
 class Logger(Protocol):
     def info(
