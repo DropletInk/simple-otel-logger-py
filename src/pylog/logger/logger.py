@@ -1,19 +1,24 @@
 import structlog
+from structlog.typing import EventDict
 from opentelemetry import trace
 from functools import wraps
 import inspect
-from typing import TypedDict, Protocol, Any, Optional
-from importlib.metadata import packages_distributions
+from typing import TypedDict, Protocol, Any
+
+# from importlib.metadata import packages_distributions
 from pylog.telemetry import get_tracer
+from functools import cached_property
+
+import sys
 
 tracer = trace.get_tracer("Mytracer")
 
 
-class LoggerProtocol(Protocol):
+class Logger(Protocol):
     def info(
         self,
         message: str,
-        attributes: Optional[dict[str, Any]] = None,
+        attributes: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         pass
@@ -21,7 +26,7 @@ class LoggerProtocol(Protocol):
     def error(
         self,
         message: str,
-        attributes: Optional[dict[str, Any]] = None,
+        attributes: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         pass
@@ -29,7 +34,7 @@ class LoggerProtocol(Protocol):
     def warning(
         self,
         message: str,
-        attributes: Optional[dict[str, Any]] = None,
+        attributes: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         pass
@@ -37,7 +42,7 @@ class LoggerProtocol(Protocol):
     def debug(
         self,
         message: str,
-        attributes: Optional[dict[str, Any]] = None,
+        attributes: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         pass
@@ -49,12 +54,8 @@ class SpanInfo(TypedDict):
     trace_flags: int
 
 
-class EventDict(TypedDict):
-    span: SpanInfo | None
-
-
 def add_open_telemetry_spans(
-    logger: LoggerProtocol, method_name: str, event_dict: EventDict
+    _, method_name: str | None, event_dict: EventDict
 ) -> EventDict:
     span = trace.get_current_span()
     if not span.is_recording():
@@ -71,9 +72,7 @@ def add_open_telemetry_spans(
     return event_dict
 
 
-def otel_tags(
-    logger: LoggerProtocol, method_name: str, event_dict: EventDict
-) -> EventDict:
+def otel_tags(_, method_name: str | None, event_dict: EventDict) -> EventDict:
     event_dict["instrumentationScope"] = {
         "name": "simple-otel-logger",
         "version": "1.0.0",
@@ -81,9 +80,7 @@ def otel_tags(
     return event_dict
 
 
-def log_organiser(
-    logger: LoggerProtocol, method_name: str, event_dict: EventDict
-) -> dict:
+def log_organiser(_, method_name: str | None, event_dict: EventDict) -> dict:
     return {
         "resources": event_dict.get("resources"),
         "instrumentationScope": event_dict.get("instrumentationScope"),
@@ -118,7 +115,7 @@ def log_configure() -> None:
 
 
 def rename_level(
-    logger: LoggerProtocol, method_name: str, event_dict: EventDict
+    _, method_name: str | None, event_dict: EventDict
 ) -> EventDict:
     level_mapping = {
         "DEBUG": 5,
@@ -160,12 +157,16 @@ def traced(span_name: str | None = None):
     return decorator
 
 
-class Logger:
-    def __init__(self, service_name=packages_distributions()["pylog"][0]):
+class ConsoleLogger:
+    def __init__(self, service_name: str | None = None):
         get_tracer()
         log_configure()
+        if service_name is None:
+            self.service_name = self.package_name
+        else:
+            self.service_name = service_name
 
-        resources = {"service_name": service_name}
+        resources = {"service_name": self.service_name}
         instrumentationScope = {
             "name": "simple-otel-logger",
             "version": "1.0.0",
@@ -173,6 +174,10 @@ class Logger:
         self.logger = structlog.get_logger().bind(
             resources=resources, instrumentationScope=instrumentationScope
         )
+
+    @cached_property
+    def package_name(self) -> str | None:
+        return sys.modules[__name__].__package__
 
     def info(self, message, attributes=None, **kwargs):
         if attributes is not None:

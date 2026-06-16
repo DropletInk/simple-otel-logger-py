@@ -3,11 +3,9 @@ from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
 )
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry import trace
-
+from opentelemetry import metrics, trace
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 
-from opentelemetry import metrics
 from opentelemetry.exporter.otlp.proto.http.metric_exporter import (
     OTLPMetricExporter,
 )
@@ -39,7 +37,9 @@ def add_traces_span_exporter(OTLP_Span_exporter_endpoint=None) -> None:
         processor = BatchSpanProcessor(
             OTLPSpanExporter(endpoint=OTLP_Span_exporter_endpoint)
         )
-        provider.add_span_processor(processor)
+        provider.add_span_processor(  # ty:ignore[unresolved-attribute]
+            processor
+        )
         trace.set_tracer_provider(provider)
 
 

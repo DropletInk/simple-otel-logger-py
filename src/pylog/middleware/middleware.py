@@ -18,10 +18,12 @@ log_configure()
 
 def create_log_middleware(
     logger,
-    request_data: Callable[[Any], dict],
-    response_data: Callable[[Any], dict],
-) -> Callable[[Any], Callable[[Any]]]:
-    async def log_middleware(request: Any, call_next: Callable[[Any], dict]):
+    request_data: Callable[[Any], dict[str, Any]],
+    response_data: Callable[[Any, Any], dict[str, Any]],
+) -> Callable[[Any, Callable[[Any], Any]], Any]:
+    async def log_middleware(
+        request: Any, call_next: Callable[[Any], Any]
+    ) -> Any:
         start_time = time.time()
         req_data = request_data(request)
         add_request_id()
