@@ -189,7 +189,7 @@ class ConsoleLogger:
     def __init__(self, service_name: str | None = None):
         get_tracer()
         log_configure()
-        self.service_name = get_package_name()
+        self.service_name = get_project_name()
         resources = {"service_name": self.service_name}
         instrumentationScope = {
             "name": "simple-otel-logger",
