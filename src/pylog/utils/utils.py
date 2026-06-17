@@ -1,10 +1,27 @@
-import os
+from pathlib import Path
 
 
 def get_project_name():
+    for path in [Path.cwd(), *Path.cwd().parents]:
+        pyproject = path / "pyproject.toml"
 
-    project_path = os.path.dirname(os.path.abspath(__file__))
+        if pyproject.exists():
+            in_project_section = False
 
-    project_name = os.path.basename(project_path)
+            with open(pyproject, "r") as f:
+                for line in f:
+                    line = line.strip()
 
-    return project_name
+                    if line == "[project]":
+                        in_project_section = True
+                        continue
+
+                    if line.startswith("[") and line.endswith("]"):
+                        in_project_section = False
+
+                    if in_project_section and line.startswith("name"):
+                        return (
+                            line.split("=", 1)[1].strip().strip('"').strip("'")
+                        )
+
+    return None
