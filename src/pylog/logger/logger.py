@@ -6,7 +6,7 @@ import inspect
 from typing import TypedDict, Protocol, Any, runtime_checkable
 from pylog.telemetry import get_tracer
 
-tracer = trace.get_tracer("Mytracer")
+tracer = trace.get_tracer(__name__)
 
 
 @runtime_checkable
@@ -51,7 +51,7 @@ class SpanInfo(TypedDict):
 
 
 def add_open_telemetry_spans(
-    _, method_name: str | None, event_dict: EventDict
+    _logger, method_name: str | None, event_dict: EventDict
 ) -> EventDict:
     span = trace.get_current_span()
     if not span.is_recording():
@@ -68,7 +68,7 @@ def add_open_telemetry_spans(
     return event_dict
 
 
-def otel_tags(_, method_name: str | None, event_dict: EventDict) -> EventDict:
+def otel_tags(_logger, method_name: str | None, event_dict: EventDict) -> EventDict:
     event_dict["instrumentationScope"] = {
         "name": "simple-otel-logger",
         "version": "1.0.0",
@@ -76,7 +76,7 @@ def otel_tags(_, method_name: str | None, event_dict: EventDict) -> EventDict:
     return event_dict
 
 
-def log_organiser(_, method_name: str | None, event_dict: EventDict) -> dict:
+def log_organiser(_logger, method_name: str | None, event_dict: EventDict) -> dict:
     return {
         "resources": event_dict.get("resources"),
         "instrumentationScope": event_dict.get("instrumentationScope"),
@@ -111,7 +111,7 @@ def log_configure() -> None:
 
 
 def rename_level(
-    _, method_name: str | None, event_dict: EventDict
+    _logger, method_name: str | None, event_dict: EventDict
 ) -> EventDict:
     level_mapping = {
         "DEBUG": 5,
