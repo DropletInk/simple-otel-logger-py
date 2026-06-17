@@ -11,12 +11,9 @@ from opentelemetry.exporter.otlp.proto.http.metric_exporter import (
 )
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
-from importlib.metadata import packages_distributions
-from pylog.logger import get_project_name
+from pylog.utils import get_project_name
 
-resource = Resource.create(
-    attributes={SERVICE_NAME: get_project_name()}
-)
+resource = Resource.create(attributes={SERVICE_NAME: get_project_name()})
 
 tracerProvider = TracerProvider(resource=resource)
 

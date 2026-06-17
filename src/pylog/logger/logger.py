@@ -4,16 +4,11 @@ from opentelemetry import trace
 from functools import wraps
 import inspect
 from typing import TypedDict, Protocol, Any
-from importlib import metadata
 from pylog.telemetry import get_tracer
-# from functools import cached_property
-
+from pylog.utils import get_project_name
 
 tracer = trace.get_tracer("Mytracer")
 
-def get_project_name():
-    project_name = metadata.version("pylog")
-    return project_name
 
 class Logger(Protocol):
     def info(
