@@ -3,13 +3,13 @@ from structlog.typing import EventDict
 from opentelemetry import trace
 from functools import wraps
 import inspect
-from typing import TypedDict, Protocol, Any
+from typing import TypedDict, Protocol, Any, runtime_checkable
 from pylog.telemetry import get_tracer
-from pylog.utils import get_project_name
 
 tracer = trace.get_tracer("Mytracer")
 
 
+@runtime_checkable
 class Logger(Protocol):
     def info(
         self,
@@ -154,11 +154,13 @@ def traced(span_name: str | None = None):
 
 
 class ConsoleLogger:
-    def __init__(self, service_name: str | None = None):
+    def __init__(self, service_name: str = "Unknown-Service"):
         get_tracer()
         log_configure()
-        self.service_name = get_project_name()
+        self.service_name = service_name
+
         resources = {"service_name": self.service_name}
+
         instrumentationScope = {
             "name": "simple-otel-logger",
             "version": "1.0.0",
