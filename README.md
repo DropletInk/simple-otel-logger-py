@@ -47,7 +47,7 @@ log.debug("Your debug message here ..............")
 Create app for FastApi then import
 
 ```py
-from pylog.logger import ConsoleLogger
+from pylog.logger import ConsoleLogger,traced
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 logger = ConsoleLogger()
 
@@ -59,9 +59,14 @@ async def health_check():
     log.info("I am Inside the health check ")
     helper_function()
     return {"status": "healthy"}
+
+@traced()
+def helper_function()
+    log.info("I am Inside the helper function ")
+    return
 ```
 
-Output
+Example Output
 
 ```bash
 {
@@ -80,6 +85,26 @@ Output
     "span": {
         "trace_id": "e5df4e47a31162ab3fecb7abc03f7bc9",
         "span_id": "8823e7269477df95",
+        "trace_flags": 3
+    },
+    "attributes": {}
+}
+{
+    "resources": {
+        "service_name": "test-logger"
+    },
+    "instrumentationScope": {
+        "name": "simple-otel-logger",
+        "version": "1.0.0"
+    },
+    "timestamp": "2026-06-17 13:49:16",
+    "severityText": "INFO",
+    "severityNumber": 9,
+    "event": "I am Inside the helper function",
+    "request_id": null,
+    "span": {
+        "trace_id": "e5df4e47a31162ab3fecb7abc03f7bc9",
+        "span_id": "7741f238b956ec92",
         "trace_flags": 3
     },
     "attributes": {}
