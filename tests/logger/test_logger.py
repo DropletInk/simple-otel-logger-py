@@ -16,7 +16,7 @@ def test_otel_tags():
 
     result = otel_tags(None, None, event)
 
-    assert result["instrumentationScope"]["name"] == "simple-otel-logger"
+    assert result["instrumentationScope"]["name"] == "pylog"
     assert result["instrumentationScope"]["version"] == "1.0.0"
 
 
