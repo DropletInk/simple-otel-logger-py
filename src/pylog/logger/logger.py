@@ -161,12 +161,10 @@ class ConsoleLogger:
 
         resources = {"service_name": self.service_name}
 
-        instrumentationScope = {
-            "name": "simple-otel-logger",
-            "version": "1.0.0",
-        }
+      
+        
         self.logger = structlog.get_logger().bind(
-            resources=resources, instrumentationScope=instrumentationScope
+            resources=resources
         )
 
     def info(self, message, attributes=None, **kwargs):
