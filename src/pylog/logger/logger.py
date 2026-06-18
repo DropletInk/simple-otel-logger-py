@@ -70,7 +70,7 @@ def add_open_telemetry_spans(
 
 def otel_tags(_logger, method_name: str | None, event_dict: EventDict) -> EventDict:
     event_dict["instrumentationScope"] = {
-        "name": "simple-otel-logger",
+        "name": "pylog",
         "version": "1.0.0",
     }
     return event_dict
