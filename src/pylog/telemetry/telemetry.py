@@ -12,7 +12,7 @@ from opentelemetry.exporter.otlp.proto.http.metric_exporter import (
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 
-resource = Resource.create(attributes={SERVICE_NAME:"Unknown-service"})
+resource = Resource.create(attributes={SERVICE_NAME: "Unknown-service"})
 
 tracerProvider = TracerProvider(resource=resource)
 

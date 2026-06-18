@@ -1,6 +1,6 @@
-import pytest
 from pylog.logger import rename_level, otel_tags, log_organiser, ConsoleLogger
-import json 
+import json
+
 
 def test_rename_level():
     event = {"level": "info"}
@@ -30,15 +30,16 @@ def test_log_organiser():
     result = log_organiser(None, None, event)
     assert result["resources"]["service_name"] == "test"
 
-#testing ConsoleLogger 
+
+# testing ConsoleLogger
 def test_consolelogger(capsys):
     log = ConsoleLogger("test")
-    log.info("testing console logger",attributes={"id":123})
+    log.info("testing console logger", attributes={"id": 123})
 
     captured = capsys.readouterr()
 
     log_output = json.loads(captured.out.strip())
 
-    assert log_output["event"] == "testing console logger" 
-    assert log_output['severityText'] =='INFO'
-    assert log_output['attributes'] == {'id':123}
+    assert log_output["event"] == "testing console logger"
+    assert log_output["severityText"] == "INFO"
+    assert log_output["attributes"] == {"id": 123}

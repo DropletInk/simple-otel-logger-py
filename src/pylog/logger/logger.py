@@ -68,7 +68,9 @@ def add_open_telemetry_spans(
     return event_dict
 
 
-def otel_tags(_logger, method_name: str | None, event_dict: EventDict) -> EventDict:
+def otel_tags(
+    _logger, method_name: str | None, event_dict: EventDict
+) -> EventDict:
     event_dict["instrumentationScope"] = {
         "name": "pylog",
         "version": "1.0.0",
@@ -76,7 +78,9 @@ def otel_tags(_logger, method_name: str | None, event_dict: EventDict) -> EventD
     return event_dict
 
 
-def log_organiser(_logger, method_name: str | None, event_dict: EventDict) -> dict:
+def log_organiser(
+    _logger, method_name: str | None, event_dict: EventDict
+) -> dict:
     return {
         "resources": event_dict.get("resources"),
         "instrumentationScope": event_dict.get("instrumentationScope"),
@@ -161,11 +165,7 @@ class ConsoleLogger:
 
         resources = {"service_name": self.service_name}
 
-      
-        
-        self.logger = structlog.get_logger().bind(
-            resources=resources
-        )
+        self.logger = structlog.get_logger().bind(resources=resources)
 
     def info(self, message, attributes=None, **kwargs):
         if attributes is not None:
