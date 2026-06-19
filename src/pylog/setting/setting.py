@@ -16,3 +16,7 @@ OTEL_EXPORTER_LOGS_ENDPOINT = os.getenv("OTEL_EXPORTER_LOGS_ENDPOINT", None)
 
 add_metric_exporter(OTEL_EXPORTER_METRIC_ENDPOINT)
 add_traces_span_exporter(OTEL_EXPORTER_TRACE_ENDPOINT)
+
+
+def get_environment():
+    return SIMPLE_OTEL_LOGGER_ENV

@@ -1,9 +1,12 @@
-import structlog
-from structlog.typing import EventDict
-from opentelemetry import trace
-from functools import wraps
 import inspect
-from typing import TypedDict, Protocol, Any, runtime_checkable
+from functools import wraps
+from typing import Any, Protocol, TypedDict, runtime_checkable
+
+import structlog
+from opentelemetry import trace
+from structlog.typing import EventDict
+
+from pylog.setting import get_environment
 from pylog.telemetry import get_tracer
 
 tracer = trace.get_tracer(__name__)
@@ -163,7 +166,10 @@ class ConsoleLogger:
         log_configure()
         self.service_name = service_name
 
-        resources = {"service_name": self.service_name}
+        resources = {
+            "service_name": self.service_name,
+            "environment": get_environment(),
+        }
 
         self.logger = structlog.get_logger().bind(resources=resources)
 
