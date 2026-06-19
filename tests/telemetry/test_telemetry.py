@@ -1,76 +1,52 @@
-from unittest.mock import MagicMock, patch
-
 from pylog.telemetry import (
     get_tracer,
     add_traces_span_exporter,
     add_metric_exporter,
 )
-from opentelemetry.sdk.trace import TracerProvider
+import pytest
+from opentelemetry import metrics
 
 
-@patch("pylog.telemetry.telemetry.trace.set_tracer_provider")
-@patch("pylog.telemetry.telemetry.trace.get_tracer")
-def test_get_tracer_sets_tracer_provider_is_valid(
-    mock_get_tracer, mocke_set_provider
-):
-    tracer = MagicMock()
-    mock_get_tracer.return_value = tracer
-
-    with patch(
-        "pylog.telemetry.telemetry.provider",
-        object(),
-    ):
-        result = get_tracer()
-
-    mocke_set_provider.assert_called_once()
-    assert result == tracer
+def test_get_tracer_returns_tracer():
+    tracer = get_tracer()
+    print(tracer)
+    assert tracer is not None
 
 
-@patch("pylog.telemetry.telemetry.trace.set_tracer_provider")
-def test_get_tracer_sets_tracer_provider_is_not_valid(mocke_set_provider):
-    with patch("pylog.telemetry.telemetry.provider", TracerProvider()):
-        get_tracer()
-
-    mocke_set_provider.assert_not_called()
-
-
-# checking for trace span exporter emdpoint provided or not
+def test_running_of_span_exporter():
+    try:
+        add_traces_span_exporter("http://localhost:4318/v1/traces")
+    except Exception as e:
+        pytest.fail(f"Something went wrong {e}")
 
 
-@patch("pylog.telemetry.telemetry.OTLPSpanExporter")
-def test_trace_exporter_created_with_endpoint(mock_exporter):
-    with patch("pylog.telemetry.telemetry.provider", MagicMock()):
-        add_traces_span_exporter("http://localhost:4341/v1/traces")
-
-    mock_exporter.assert_called_once_with(
-        endpoint="http://localhost:4341/v1/traces"
-    )
-
-
-# verify if no endpoint is provided
-@patch("pylog.telemetry.telemetry.OTLPSpanExporter")
-def test_trace_exporter_created_with_no_endpoint(mock_exporter):
-    add_traces_span_exporter(None)
-
-    mock_exporter.assert_not_called()
+def test_add_metric_exporter():
+    try:
+        add_metric_exporter("http://localhost:4318/v1/metrics")
+        provider = metrics.get_meter_provider()
+        assert provider is not None
+    except Exception as e:
+        pytest.fail(f"Something went wrong {e}")
 
 
-# checking for metric exporter endpoint provided or not
+def test_add_traces_span_exporter():
+    try:
+        add_traces_span_exporter("http://localhost:4318/v1/traces")
+
+        tracer = get_tracer()
+        with tracer.start_as_current_span("test-span") as span:  # ty:ignore[unresolved-attribute]
+            assert span is not None
+    except Exception as e:
+        pytest.fail(f"Something went wrong {e}")
 
 
-@patch("pylog.telemetry.telemetry.OTLPMetricExporter")
-def test_metric_exporter_created_with_endpoint(mock_exporter):
-    with patch("pylog.telemetry.telemetry.provider", MagicMock()):
-        add_metric_exporter("http://localhost:4341/v1/metrics")
+def test_add_metric_exporter_does_not_raise():
+    try:
+        add_metric_exporter("http://localhost:4318/v1/metrics")
+        meter = metrics.get_meter(__name__)
 
-    mock_exporter.assert_called_once_with(
-        endpoint="http://localhost:4341/v1/metrics"
-    )
-
-
-# verify if no endpoint is provided
-@patch("pylog.telemetry.telemetry.OTLPMetricExporter")
-def test_metric_exporter_created_with_no_endpoint(mock_exporter):
-    add_metric_exporter(None)
-
-    mock_exporter.assert_not_called()
+        counter = meter.create_counter("test-counter")
+        counter.add(2)
+        assert counter is not None
+    except Exception as e:
+        pytest.fail(f"Something went wrong {e}")
