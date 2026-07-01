@@ -5,7 +5,7 @@
 if using **uv** 
 
 ```bash
-uv add git+https://github.com/DropletInk/simple-otel-logger-py.git --branch 3-adding-the-logging-library
+uv add git+https://github.com/DropletInk/simple-otel-logger-py.git 
 ```
 
 ## Environment Configuration
