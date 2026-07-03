@@ -5,7 +5,7 @@
 if using **uv** 
 
 ```bash
-uv add git+https://github.com/DropletInk/simple-otel-logger-py.git 
+uv add "git+ssh://git@github.com/DropletInk/simple-otel-logger-py.git
 ```
 
 ## Environment Configuration
