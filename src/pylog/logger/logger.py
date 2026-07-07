@@ -46,6 +46,14 @@ class Logger(Protocol):
     ) -> None:
         pass
 
+    def exception(
+        self,
+        message: str,
+        attributes: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        pass
+
 
 class SpanInfo(TypedDict):
     trace_id: str
@@ -192,3 +200,8 @@ class ConsoleLogger:
         if attributes is not None:
             kwargs["attributes"] = attributes
         self.logger.debug(message, **kwargs)
+
+    def exception(self, message, attributes=None, **kwargs):
+        if attributes is not None:
+            kwargs["attributes"] = attributes
+        self.logger.error(message, exc_info=True, **kwargs)

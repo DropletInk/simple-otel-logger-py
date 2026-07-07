@@ -1,8 +1,9 @@
+from starlette.middleware.base import BaseHTTPMiddleware
+from typing import Callable, Any
 import uuid
 import structlog
-from pylog.logger import log_configure
 import time
-from typing import Callable, Any
+from pylog.logger import log_configure
 
 
 def add_request_id() -> uuid.UUID:
@@ -41,3 +42,21 @@ def create_log_middleware(
         return response
 
     return log_middleware
+
+
+class LoggingMiddleware(BaseHTTPMiddleware):
+    def __init__(
+        self,
+        app,
+        logger,
+        request_data: Callable[[Any], dict[str, Any]],
+        response_data: Callable[[Any, Any], dict[str, Any]],
+    ):
+        super().__init__(app)
+
+        self.dispatch_func = create_log_middleware(
+            logger, request_data, response_data
+        )
+
+    async def dispatch(self, request, call_next):
+        return await self.dispatch_func(request, call_next)
