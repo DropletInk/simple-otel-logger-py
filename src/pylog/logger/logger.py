@@ -132,44 +132,31 @@ def log_configure() -> None:
     ]
     environment = get_environment()
     console_enabled = get_console_enabled()
-    if environment == "development":
 
-        def colored_json_renderer(logger, method_name, event_dict):
-            severity = event_dict.get("severityText")
-            if severity in LEVEL_COLORS:
-                event_dict["severityText"] = (
-                    f"{LEVEL_COLORS[severity]}{severity}{RESET}"
-                )
-            json_str = json.dumps(event_dict, indent=4,default=str)
-            return json_str.replace("\\u001b", "\033")
+    def colored_json_renderer(logger, method_name, event_dict):
+        severity = event_dict.get("severityText")
+        if severity in LEVEL_COLORS:
+            event_dict["severityText"] = (
+                f"{LEVEL_COLORS[severity]}{severity}{RESET}"
+            )
+        if environment == "development":
+            json_str = json.dumps(event_dict, indent=4, default=str)
+        else:
+            json_str = json.dumps(event_dict, default=str)
+        return json_str.replace("\\u001b", "\033")
 
-        processors.extend(
-            [
-                rename_level,
-                log_organiser,
-            ]
+    processors.extend(
+        [
+            rename_level,
+            log_organiser,
+        ]
+    )
+    if console_enabled:
+        processors.append(
+            colored_json_renderer,
         )
-        if console_enabled:
-            processors.append(
-                colored_json_renderer,
-            )
-        else:
-            processors.append(discard_renderer)
     else:
-        if console_enabled:
-            ansi_styles = {
-                "debug": "\033[34m",
-                "info": "\033[32m",
-                "warning": "\033[33m",
-                "error": "\033[31m",
-            }
-            processors.append(
-                structlog.dev.ConsoleRenderer(
-                    colors=False, level_styles=ansi_styles
-                )
-            )
-        else:
-            processors.append(discard_renderer)
+        processors.append(discard_renderer)
 
     structlog.configure(processors=processors)
 
