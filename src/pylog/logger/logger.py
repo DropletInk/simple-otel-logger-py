@@ -140,7 +140,7 @@ def log_configure() -> None:
                 event_dict["severityText"] = (
                     f"{LEVEL_COLORS[severity]}{severity}{RESET}"
                 )
-            json_str = json.dumps(event_dict, indent=4)
+            json_str = json.dumps(event_dict, indent=4,default=str)
             return json_str.replace("\\u001b", "\033")
 
         processors.extend(
