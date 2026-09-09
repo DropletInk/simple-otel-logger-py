@@ -1,6 +1,6 @@
 import os
-from pylog.telemetry import add_metric_exporter, add_traces_span_exporter
 
+from pylog.telemetry import add_metric_exporter, add_traces_span_exporter
 
 OTEL_SERVICE_NAME = os.getenv("OTEL_SERVICE_NAME", "unknown-service")
 
@@ -19,4 +19,8 @@ add_traces_span_exporter(OTEL_EXPORTER_TRACE_ENDPOINT)
 
 
 def get_environment():
-    return SIMPLE_OTEL_LOGGER_ENV
+    return os.getenv("SIMPLE_OTEL_LOGGER_ENV", "Production")
+
+
+def get_console_enabled() -> bool:
+    return os.getenv("SIMPLE_OTEL_LOGGER_CONSOLE", "true")

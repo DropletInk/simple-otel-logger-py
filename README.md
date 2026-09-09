@@ -114,7 +114,6 @@ Example Output
 ## For the middlewares
 
 ```py
-
 from pylog.middleware import create_log_middleware
 
 middleware = create_log_middleware(
@@ -138,7 +137,6 @@ middleware = create_log_middleware(
 )
 
 app.middleware("http")(middleware)
-
 ```
 
 ## Example Output

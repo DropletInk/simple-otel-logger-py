@@ -1,8 +1,11 @@
-from starlette.middleware.base import BaseHTTPMiddleware
-from typing import Callable, Any
-import uuid
-import structlog
 import time
+import uuid
+from collections.abc import Callable
+from typing import Any
+
+import structlog
+from starlette.middleware.base import BaseHTTPMiddleware
+
 from pylog.logger import log_configure
 
 
