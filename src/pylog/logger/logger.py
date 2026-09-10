@@ -5,6 +5,8 @@ from typing import Any, Protocol, TypedDict, runtime_checkable
 
 import structlog
 from opentelemetry import trace
+from rich.console import Console
+from rich.syntax import Syntax
 from structlog.typing import EventDict
 
 from pylog.setting import get_environment
@@ -12,15 +14,7 @@ from pylog.setting.setting import get_console_enabled
 from pylog.telemetry import get_tracer
 
 tracer = trace.get_tracer(__name__)
-
-
-RESET = "\033[0m"
-LEVEL_COLORS = {
-    "INFO": "\033[32m",  # Green
-    "WARNING": "\033[33m",  # Yellow
-    "ERROR": "\033[31m",  # Red
-    "DEBUG": "\033[34m",  # Blue
-}
+console = Console()
 
 
 @runtime_checkable
@@ -120,6 +114,34 @@ def discard_renderer(logger, method_name, event_dict):
     return ""
 
 
+def json_renderer(logger, method_name, event_dict):
+    return json.dumps(
+        event_dict,
+        default=str,
+        separators=(",", ":"),
+    )
+
+
+def rich_renderer(logger, method_name, event_dict):
+    json_str = json.dumps(
+        event_dict,
+        indent=4,
+        default=str,
+    )
+
+    syntax = Syntax(
+        json_str,
+        "json",
+        theme="monokai",
+        line_numbers=False,
+        word_wrap=True,
+    )
+
+    console.print(syntax)
+
+    return ""
+
+
 def log_configure() -> None:
     processors = [
         structlog.contextvars.merge_contextvars,
@@ -128,35 +150,21 @@ def log_configure() -> None:
         structlog.processors.add_log_level,
         structlog.processors.StackInfoRenderer(),
         structlog.dev.set_exc_info,
-        structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S", utc=False),
+        structlog.processors.TimeStamper(
+            fmt="%Y-%m-%d %H:%M:%S",
+            utc=False,
+        ),
+        rename_level,
+        log_organiser,
     ]
+
     environment = get_environment()
     console_enabled = get_console_enabled()
 
-    def colored_json_renderer(logger, method_name, event_dict):
-        severity = event_dict.get("severityText")
-        if severity in LEVEL_COLORS:
-            event_dict["severityText"] = (
-                f"{LEVEL_COLORS[severity]}{severity}{RESET}"
-            )
-        if environment == "development":
-            json_str = json.dumps(event_dict, indent=4, default=str)
-        else:
-            json_str = json.dumps(event_dict, default=str)
-        return json_str.replace("\\u001b", "\033")
-
-    processors.extend(
-        [
-            rename_level,
-            log_organiser,
-        ]
-    )
-    if console_enabled:
-        processors.append(
-            colored_json_renderer,
-        )
+    if console_enabled and environment == "development":
+        processors.append(rich_renderer)
     else:
-        processors.append(discard_renderer)
+        processors.append(json_renderer)
 
     structlog.configure(processors=processors)
 

@@ -21,4 +21,4 @@ def get_environment():
 
 
 def get_console_enabled() -> bool:
-    return os.getenv("SIMPLE_OTEL_LOGGER_CONSOLE", "true")
+    return os.getenv("SIMPLE_OTEL_LOGGER_CONSOLE", "True")
