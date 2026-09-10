@@ -201,7 +201,11 @@ def log_configure() -> None:
     else:
         processors.append(json_renderer)
 
-    structlog.configure(processors=processors)
+    structlog.configure(
+        processors=processors,
+        logger_factory=structlog.PrintLoggerFactory(),
+        cache_logger_on_first_use=False,
+    )
 
 
 def rename_level(
