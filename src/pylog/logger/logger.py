@@ -7,6 +7,8 @@ import structlog
 from opentelemetry import trace
 from rich.console import Console
 from rich.syntax import Syntax
+from rich.text import Text
+from structlog.dev import GREEN
 from structlog.typing import EventDict
 
 from pylog.setting import get_environment
@@ -100,12 +102,13 @@ def log_organiser(
     return {
         "resources": event_dict.get("resources"),
         "instrumentationScope": event_dict.get("instrumentationScope"),
+        # "request_id": event_dict.get("request_id"),
         "timestamp": event_dict.get("timestamp"),
+        "span": event_dict.get("span"),
         "severityText": event_dict.get("severityText"),
         "severityNumber": event_dict.get("severityNumber"),
-        "event": event_dict.get("event"),
-        "request_id": event_dict.get("request_id"),
-        "span": event_dict.get("span"),
+        "eventName": event_dict.get("eventName"),
+        "body": event_dict.get("body"),
         "attributes": event_dict.get("attributes", {}),
     }
 
@@ -121,23 +124,54 @@ def json_renderer(logger, method_name, event_dict):
         separators=(",", ":"),
     )
 
-
 def rich_renderer(logger, method_name, event_dict):
+    severity = event_dict.get("severityText", "INFO")
+
+    severity_styles = {
+        "DEBUG": "blue",
+        "INFO": "green",
+        "WARNING": "yellow",
+        "ERROR": "red",
+        "CRITICAL": "magenta",
+    }
+
+    style = severity_styles.get(severity, "white")
+
     json_str = json.dumps(
         event_dict,
         indent=4,
         default=str,
     )
 
-    syntax = Syntax(
-        json_str,
-        "json",
-        theme="monokai",
-        line_numbers=False,
-        word_wrap=True,
-    )
+    text = Text(json_str)
 
-    console.print(syntax)
+    marker = f'"severityText": "{severity}"'
+
+    start = text.plain.find(marker)
+
+    if start != -1:
+        value_start = start + len('"severityText": "')
+        value_end = value_start + len(severity)
+
+        text.stylize(
+            f"bold {style}",
+            value_start,
+            value_end,
+        )
+
+    body = event_dict.get("body")
+
+    if body is not None:
+        body_marker = f'"body": "{body}"'
+        start = text.plain.find(body_marker)
+
+        if start != -1:
+            text.stylize(
+                f"bold {'blue'}",
+                start,
+                start + len(body_marker),
+            )
+    console.print(text, markup=False)
 
     return ""
 
@@ -225,27 +259,42 @@ class ConsoleLogger:
 
         self.logger = structlog.get_logger().bind(resources=resources)
 
-    def info(self, message, attributes=None, **kwargs):
+    def info(self, message, eventName=None, attributes=None, **kwargs):
+        kwargs["body"] = message
+        if eventName is not None:
+            kwargs["eventName"] = eventName
         if attributes is not None:
             kwargs["attributes"] = attributes
         self.logger.info(message, **kwargs)
 
-    def error(self, message, attributes=None, **kwargs):
+    def error(self, message, eventName=None, attributes=None, **kwargs):
+        kwargs["body"] = message
+        if eventName is not None:
+            kwargs["eventName"] = eventName
         if attributes is not None:
             kwargs["attributes"] = attributes
         self.logger.error(message, **kwargs)
 
-    def warning(self, message, attributes=None, **kwargs):
+    def warning(self, message, eventName=None, attributes=None, **kwargs):
+        kwargs["body"] = message
+        if eventName is not None:
+            kwargs["eventName"] = eventName
         if attributes is not None:
             kwargs["attributes"] = attributes
         self.logger.warning(message, **kwargs)
 
-    def debug(self, message, attributes=None, **kwargs):
+    def debug(self, message, eventName=None, attributes=None, **kwargs):
+        kwargs["body"] = message
+        if eventName is not None:
+            kwargs["eventName"] = eventName
         if attributes is not None:
             kwargs["attributes"] = attributes
         self.logger.debug(message, **kwargs)
 
-    def exception(self, message, attributes=None, **kwargs):
+    def exception(self, message, eventName=None, attributes=None, **kwargs):
+        kwargs["body"] = message
+        if eventName is not None:
+            kwargs["eventName"] = eventName
         if attributes is not None:
             kwargs["attributes"] = attributes
         self.logger.error(message, **kwargs)

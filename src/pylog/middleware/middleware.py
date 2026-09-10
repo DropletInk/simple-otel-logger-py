@@ -30,7 +30,7 @@ def create_log_middleware(
     ) -> Any:
         start_time = time.time()
         req_data = request_data(request)
-        add_request_id()
+        req_data["request_id"] = add_request_id()
 
         logger.info("Request Started", attributes=req_data)
 
