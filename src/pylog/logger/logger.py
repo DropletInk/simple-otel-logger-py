@@ -14,7 +14,10 @@ from pylog.setting.setting import get_console_enabled
 from pylog.telemetry import get_tracer
 
 tracer = trace.get_tracer(__name__)
-console = Console()
+console = Console(
+    force_terminal=True,
+    color_system="standard",
+)
 
 
 @runtime_checkable
