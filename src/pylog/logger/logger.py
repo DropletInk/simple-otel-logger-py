@@ -1,5 +1,7 @@
 import inspect
 import json
+import logging
+import sys
 from functools import wraps
 from typing import Any, Protocol, TypedDict, runtime_checkable
 
@@ -201,9 +203,21 @@ def log_configure() -> None:
     else:
         processors.append(json_renderer)
 
+    pylog_logger = logging.getLogger("pylog")
+
+    pylog_logger.handlers.clear()
+
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(logging.Formatter("%(message)s"))
+
+    pylog_logger.addHandler(handler)
+    pylog_logger.setLevel(logging.DEBUG)
+
+    pylog_logger.propagate = False
+
     structlog.configure(
         processors=processors,
-        logger_factory=structlog.PrintLoggerFactory(),
+        logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=False,
     )
 
@@ -261,7 +275,7 @@ class ConsoleLogger:
             "environment": get_environment(),
         }
 
-        self.logger = structlog.get_logger().bind(resources=resources)
+        self.logger = structlog.get_logger("pylog").bind(resources=resources)
 
     def info(self, message, eventName=None, attributes=None, **kwargs):
         kwargs["body"] = message
