@@ -6,9 +6,7 @@ from typing import Any, Protocol, TypedDict, runtime_checkable
 import structlog
 from opentelemetry import trace
 from rich.console import Console
-from rich.syntax import Syntax
 from rich.text import Text
-from structlog.dev import GREEN
 from structlog.typing import EventDict
 
 from pylog.setting import get_environment
@@ -124,6 +122,7 @@ def json_renderer(logger, method_name, event_dict):
         separators=(",", ":"),
     )
 
+
 def rich_renderer(logger, method_name, event_dict):
     severity = event_dict.get("severityText", "INFO")
 
@@ -132,7 +131,6 @@ def rich_renderer(logger, method_name, event_dict):
         "INFO": "green",
         "WARNING": "yellow",
         "ERROR": "red",
-        "CRITICAL": "magenta",
     }
 
     style = severity_styles.get(severity, "white")
@@ -211,7 +209,6 @@ def rename_level(
         "INFO": 9,
         "WARNING": 13,
         "ERROR": 17,
-        "CRITICAL": 21,
     }
     if "level" in event_dict:
         event_dict["severityText"] = str(event_dict.pop("level")).upper()

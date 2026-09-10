@@ -35,7 +35,7 @@ def test_log_organiser():
 
 # testing ConsoleLogger
 def test_consolelogger(capsys, monkeypatch):
-    monkeypatch.setenv("SIMPLE_OTEL_LOGGER_ENV", "development")
+    monkeypatch.setenv("ENVIRONMENT", "development")
 
     log = ConsoleLogger("test")
 
@@ -47,5 +47,5 @@ def test_consolelogger(capsys, monkeypatch):
 
     log_output = json.loads(clean_output.strip())
 
-    assert log_output["event"] == "testing console logger"
+    assert log_output["body"] == "testing console logger"
     assert log_output["attributes"] == {"id": 123}

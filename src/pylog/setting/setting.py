@@ -17,8 +17,8 @@ add_traces_span_exporter(OTEL_EXPORTER_TRACE_ENDPOINT)
 
 
 def get_environment():
-    return os.getenv("SIMPLE_OTEL_LOGGER_ENV", "production")
+    return os.getenv("ENVIRONMENT", "production")
 
 
 def get_console_enabled() -> bool:
-    return os.getenv("SIMPLE_OTEL_LOGGER_CONSOLE", "True")
+    return os.getenv("LOG_ON_CONSOLE", "True")
