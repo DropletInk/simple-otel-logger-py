@@ -1,5 +1,7 @@
-from pylog.logger import rename_level, otel_tags, log_organiser, ConsoleLogger
 import json
+import re
+
+from pylog.logger import ConsoleLogger, log_organiser, otel_tags, rename_level
 
 
 def test_rename_level():
@@ -32,14 +34,18 @@ def test_log_organiser():
 
 
 # testing ConsoleLogger
-def test_consolelogger(capsys):
+def test_consolelogger(capsys, monkeypatch):
+    monkeypatch.setenv("ENVIRONMENT", "development")
+
     log = ConsoleLogger("test")
+
     log.info("testing console logger", attributes={"id": 123})
 
     captured = capsys.readouterr()
 
-    log_output = json.loads(captured.out.strip())
+    clean_output = re.sub(r"\x1b\[[0-9;]*m", "", captured.out)
 
-    assert log_output["event"] == "testing console logger"
-    assert log_output["severityText"] == "INFO"
+    log_output = json.loads(clean_output.strip())
+
+    assert log_output["body"] == "testing console logger"
     assert log_output["attributes"] == {"id": 123}

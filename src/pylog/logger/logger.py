@@ -1,15 +1,25 @@
 import inspect
+import json
+import logging
+import sys
 from functools import wraps
 from typing import Any, Protocol, TypedDict, runtime_checkable
 
 import structlog
 from opentelemetry import trace
+from rich.console import Console
+from rich.text import Text
 from structlog.typing import EventDict
 
 from pylog.setting import get_environment
+from pylog.setting.setting import get_console_enabled
 from pylog.telemetry import get_tracer
 
 tracer = trace.get_tracer(__name__)
+console = Console(
+    force_terminal=True,
+    color_system="standard",
+)
 
 
 @runtime_checkable
@@ -95,33 +105,120 @@ def log_organiser(
     return {
         "resources": event_dict.get("resources"),
         "instrumentationScope": event_dict.get("instrumentationScope"),
+        # "request_id": event_dict.get("request_id"),
         "timestamp": event_dict.get("timestamp"),
+        "span": event_dict.get("span"),
         "severityText": event_dict.get("severityText"),
         "severityNumber": event_dict.get("severityNumber"),
-        "event": event_dict.get("event"),
-        "request_id": event_dict.get("request_id"),
-        "span": event_dict.get("span"),
+        "eventName": event_dict.get("eventName"),
+        "body": event_dict.get("body"),
         "attributes": event_dict.get("attributes", {}),
     }
 
 
+def discard_renderer(logger, method_name, event_dict):
+    return ""
+
+
+def json_renderer(logger, method_name, event_dict):
+    return json.dumps(
+        event_dict,
+        default=str,
+        separators=(",", ":"),
+    )
+
+
+def rich_renderer(logger, method_name, event_dict):
+    severity = event_dict.get("severityText", "INFO")
+
+    severity_styles = {
+        "DEBUG": "blue",
+        "INFO": "green",
+        "WARNING": "yellow",
+        "ERROR": "red",
+    }
+
+    style = severity_styles.get(severity, "white")
+
+    json_str = json.dumps(
+        event_dict,
+        indent=4,
+        default=str,
+    )
+
+    text = Text(json_str)
+
+    marker = f'"severityText": "{severity}"'
+
+    start = text.plain.find(marker)
+
+    if start != -1:
+        value_start = start + len('"severityText": "')
+        value_end = value_start + len(severity)
+
+        text.stylize(
+            f"bold {style}",
+            value_start,
+            value_end,
+        )
+
+    body = event_dict.get("body")
+
+    if body is not None:
+        body_marker = f'"body": "{body}"'
+        start = text.plain.find(body_marker)
+
+        if start != -1:
+            text.stylize(
+                f"bold {'blue'}",
+                start,
+                start + len(body_marker),
+            )
+    console.print(text, markup=False)
+
+    return ""
+
+
 def log_configure() -> None:
-    # struture of the logs using structlog
+    processors = [
+        structlog.contextvars.merge_contextvars,
+        add_open_telemetry_spans,
+        otel_tags,
+        structlog.processors.add_log_level,
+        structlog.processors.StackInfoRenderer(),
+        structlog.dev.set_exc_info,
+        structlog.processors.TimeStamper(
+            fmt="%Y-%m-%d %H:%M:%S",
+            utc=False,
+        ),
+        rename_level,
+        log_organiser,
+    ]
+
+    environment = get_environment()
+    console_enabled = get_console_enabled()
+
+    if console_enabled and environment == "development":
+        processors.append(rich_renderer)
+    else:
+        processors.append(json_renderer)
+
+    pylog_logger = logging.getLogger("pylog")
+
+    pylog_logger.handlers.clear()
+
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(logging.Formatter("%(message)s"))
+
+    pylog_logger.addHandler(handler)
+    pylog_logger.setLevel(logging.DEBUG)
+
+    pylog_logger.propagate = False
+
     structlog.configure(
-        processors=[
-            structlog.contextvars.merge_contextvars,
-            add_open_telemetry_spans,
-            otel_tags,
-            structlog.processors.add_log_level,
-            rename_level,
-            structlog.processors.StackInfoRenderer(),
-            structlog.dev.set_exc_info,
-            structlog.processors.TimeStamper(
-                fmt="%Y-%m-%d %H:%M:%S", utc=False
-            ),
-            log_organiser,
-            structlog.processors.JSONRenderer(indent=4),
-        ],
+        processors=processors,
+        logger_factory=structlog.stdlib.LoggerFactory(),
+        cache_logger_on_first_use=False,
     )
 
 
@@ -133,10 +230,9 @@ def rename_level(
         "INFO": 9,
         "WARNING": 13,
         "ERROR": 17,
-        "CRITICAL": 21,
     }
     if "level" in event_dict:
-        event_dict["severityText"] = event_dict.pop("level").upper()
+        event_dict["severityText"] = str(event_dict.pop("level")).upper()
         event_dict["severityNumber"] = level_mapping.get(
             event_dict["severityText"], 0
         )
@@ -179,29 +275,44 @@ class ConsoleLogger:
             "environment": get_environment(),
         }
 
-        self.logger = structlog.get_logger().bind(resources=resources)
+        self.logger = structlog.get_logger("pylog").bind(resources=resources)
 
-    def info(self, message, attributes=None, **kwargs):
+    def info(self, message, eventName=None, attributes=None, **kwargs):
+        kwargs["body"] = message
+        if eventName is not None:
+            kwargs["eventName"] = eventName
         if attributes is not None:
             kwargs["attributes"] = attributes
         self.logger.info(message, **kwargs)
 
-    def error(self, message, attributes=None, **kwargs):
+    def error(self, message, eventName=None, attributes=None, **kwargs):
+        kwargs["body"] = message
+        if eventName is not None:
+            kwargs["eventName"] = eventName
         if attributes is not None:
             kwargs["attributes"] = attributes
         self.logger.error(message, **kwargs)
 
-    def warning(self, message, attributes=None, **kwargs):
+    def warning(self, message, eventName=None, attributes=None, **kwargs):
+        kwargs["body"] = message
+        if eventName is not None:
+            kwargs["eventName"] = eventName
         if attributes is not None:
             kwargs["attributes"] = attributes
         self.logger.warning(message, **kwargs)
 
-    def debug(self, message, attributes=None, **kwargs):
+    def debug(self, message, eventName=None, attributes=None, **kwargs):
+        kwargs["body"] = message
+        if eventName is not None:
+            kwargs["eventName"] = eventName
         if attributes is not None:
             kwargs["attributes"] = attributes
         self.logger.debug(message, **kwargs)
 
-    def exception(self, message, attributes=None, **kwargs):
+    def exception(self, message, eventName=None, attributes=None, **kwargs):
+        kwargs["body"] = message
+        if eventName is not None:
+            kwargs["eventName"] = eventName
         if attributes is not None:
             kwargs["attributes"] = attributes
-        self.logger.error(message, exc_info=True, **kwargs)
+        self.logger.error(message, **kwargs)
