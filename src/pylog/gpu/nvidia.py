@@ -35,6 +35,7 @@ class NvidiaBackend:
                 )
             )
 
+        print(f"..............metrics: {metrics}")
         return metrics
 
     def close(self) -> None:
