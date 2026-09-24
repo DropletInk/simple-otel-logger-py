@@ -30,7 +30,7 @@ def configure_telemetry() -> None:
     """Configure OpenTelemetry exporters and system metrics."""
     add_metric_exporter(
         OTEL_EXPORTER_METRIC_ENDPOINT,  # None is fine — add_metric_exporter already branches on this
-        logger=_get_metrics_logger(),
+        logger=_get_metrics_logger,
     )
 
     if OTEL_EXPORTER_TRACE_ENDPOINT:
