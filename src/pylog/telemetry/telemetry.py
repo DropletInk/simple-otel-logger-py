@@ -144,9 +144,8 @@ class SimpleConsoleMetricExporter(MetricExporter):
                 {"metric": name, "rss_mb": round(rss_mb, 1)},
             )
 
-        elif hasattr(metric.data, "aggregation_temporality") and not hasattr(
-            metric.data, "bucket_counts"
-        ):
+        elif hasattr(metric.data, "aggregation_temporality") and not (points and hasattr(points[0], "bucket_counts")):
+            # plain counters / up-down counters
             for p in points:
                 attrs = dict(p.attributes)
                 job_id = attrs.pop("job_id", None)
@@ -158,9 +157,8 @@ class SimpleConsoleMetricExporter(MetricExporter):
                     {"metric": name, "value": p.value, "job_id": job_id},
                 )
 
-        elif hasattr(metric.data, "bucket_counts") or (
-            points and hasattr(points[0], "count")
-        ):
+        elif points and hasattr(points[0], "bucket_counts"):
+            # histograms
             for p in points:
                 attrs = dict(p.attributes)
                 job_id = attrs.pop("job_id", None)
