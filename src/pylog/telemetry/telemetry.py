@@ -145,7 +145,6 @@ class SimpleConsoleMetricExporter(MetricExporter):
             )
 
         elif hasattr(metric.data, "aggregation_temporality") and not (points and hasattr(points[0], "bucket_counts")):
-            # plain counters / up-down counters
             for p in points:
                 attrs = dict(p.attributes)
                 job_id = attrs.pop("job_id", None)
