@@ -26,20 +26,15 @@ def _get_metrics_logger():
 
     return ConsoleLogger(service_name=OTEL_SERVICE_NAME)
 
-
 def configure_telemetry() -> None:
     """Configure OpenTelemetry exporters and system metrics."""
-
-    if OTEL_EXPORTER_METRIC_ENDPOINT:
-        add_metric_exporter(
-            OTEL_EXPORTER_METRIC_ENDPOINT,
-            logger=_get_metrics_logger(),
-        )
+    add_metric_exporter(
+        OTEL_EXPORTER_METRIC_ENDPOINT,  # None is fine — add_metric_exporter already branches on this
+        logger=_get_metrics_logger(),
+    )
 
     if OTEL_EXPORTER_TRACE_ENDPOINT:
-        add_traces_span_exporter(
-            OTEL_EXPORTER_TRACE_ENDPOINT,
-        )
+        add_traces_span_exporter(OTEL_EXPORTER_TRACE_ENDPOINT)
 
     if OTEL_ENABLE_SYSTEM_METRICS:
         enable_system_metrics()
@@ -51,3 +46,5 @@ def get_environment():
 
 def get_console_enabled() -> bool:
     return os.getenv("LOG_ON_CONSOLE", "True")
+
+configure_telemetry()
