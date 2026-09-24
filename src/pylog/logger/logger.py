@@ -105,17 +105,18 @@ def log_organiser(
     return {
         "resources": event_dict.get("resources"),
         "instrumentationScope": event_dict.get("instrumentationScope"),
-        # "request_id": event_dict.get("request_id"),
         "timestamp": event_dict.get("timestamp"),
         "span": event_dict.get("span"),
         "severityText": event_dict.get("severityText"),
         "severityNumber": event_dict.get("severityNumber"),
         "eventName": event_dict.get("eventName"),
         "body": event_dict.get("body"),
-        "metrics": event_dict.get("metrics"),
+        "metrics": {
+            "cpu_metrics": event_dict.get("cpu_metrics", {}),
+            "gpu_metrics": event_dict.get("gpu_metrics", {}),
+        },
         "attributes": event_dict.get("attributes", {}),
     }
-
 
 def discard_renderer(logger, method_name, event_dict):
     return ""
@@ -264,19 +265,12 @@ def traced(span_name: str | None = None):
 
     return decorator
 
-
 class ConsoleLogger:
     def __init__(self, service_name: str = "Unknown-Service"):
         get_tracer()
         log_configure()
-        configure_telemetry()
         self.service_name = service_name
-
-        resources = {
-            "service_name": self.service_name,
-            "environment": get_environment(),
-        }
-
+        resources = {"service_name": self.service_name, "environment": get_environment()}
         self.logger = structlog.get_logger("pylog").bind(resources=resources)
 
     def info(
@@ -289,13 +283,14 @@ class ConsoleLogger:
         **kwargs,
     ):
         kwargs["body"] = message
-        kwargs.setdefault("metrics", {})
-        kwargs["metrics"]["cpu_metrics"] = cpu_metrics if cpu_metrics else {}
-        kwargs["metrics"]["gpu_metrics"] = gpu_metrics if gpu_metrics else {}
         if eventName is not None:
             kwargs["eventName"] = eventName
         if attributes is not None:
             kwargs["attributes"] = attributes
+        if cpu_metrics is not None:
+            kwargs["cpu_metrics"] = cpu_metrics
+        if gpu_metrics is not None:
+            kwargs["gpu_metrics"] = gpu_metrics
         self.logger.info(message, **kwargs)
 
     def error(
@@ -308,13 +303,14 @@ class ConsoleLogger:
         **kwargs,
     ):
         kwargs["body"] = message
-        kwargs.setdefault("metrics", {})
-        kwargs["metrics"]["cpu_metrics"] = cpu_metrics if cpu_metrics else {}
-        kwargs["metrics"]["gpu_metrics"] = gpu_metrics if gpu_metrics else {}
         if eventName is not None:
             kwargs["eventName"] = eventName
         if attributes is not None:
             kwargs["attributes"] = attributes
+        if cpu_metrics is not None:
+            kwargs["cpu_metrics"] = cpu_metrics
+        if gpu_metrics is not None:
+            kwargs["gpu_metrics"] = gpu_metrics
         self.logger.error(message, **kwargs)
 
     def warning(
@@ -327,13 +323,14 @@ class ConsoleLogger:
         **kwargs,
     ):
         kwargs["body"] = message
-        kwargs.setdefault("metrics", {})
-        kwargs["metrics"]["cpu_metrics"] = cpu_metrics if cpu_metrics else {}
-        kwargs["metrics"]["gpu_metrics"] = gpu_metrics if gpu_metrics else {}
         if eventName is not None:
             kwargs["eventName"] = eventName
         if attributes is not None:
             kwargs["attributes"] = attributes
+        if cpu_metrics is not None:
+            kwargs["cpu_metrics"] = cpu_metrics
+        if gpu_metrics is not None:
+            kwargs["gpu_metrics"] = gpu_metrics
         self.logger.warning(message, **kwargs)
 
     def debug(
@@ -346,13 +343,14 @@ class ConsoleLogger:
         **kwargs,
     ):
         kwargs["body"] = message
-        kwargs.setdefault("metrics", {})
-        kwargs["metrics"]["cpu_metrics"] = cpu_metrics if cpu_metrics else {}
-        kwargs["metrics"]["gpu_metrics"] = gpu_metrics if gpu_metrics else {}
         if eventName is not None:
             kwargs["eventName"] = eventName
         if attributes is not None:
             kwargs["attributes"] = attributes
+        if cpu_metrics is not None:
+            kwargs["cpu_metrics"] = cpu_metrics
+        if gpu_metrics is not None:
+            kwargs["gpu_metrics"] = gpu_metrics
         self.logger.debug(message, **kwargs)
 
     def exception(
@@ -365,11 +363,12 @@ class ConsoleLogger:
         **kwargs,
     ):
         kwargs["body"] = message
-        kwargs.setdefault("metrics", {})
-        kwargs["metrics"]["cpu_metrics"] = cpu_metrics if cpu_metrics else {}
-        kwargs["metrics"]["gpu_metrics"] = gpu_metrics if gpu_metrics else {}
         if eventName is not None:
             kwargs["eventName"] = eventName
         if attributes is not None:
             kwargs["attributes"] = attributes
+        if cpu_metrics is not None:
+            kwargs["cpu_metrics"] = cpu_metrics
+        if gpu_metrics is not None:
+            kwargs["gpu_metrics"] = gpu_metrics
         self.logger.error(message, **kwargs)

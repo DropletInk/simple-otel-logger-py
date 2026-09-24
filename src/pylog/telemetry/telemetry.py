@@ -84,14 +84,27 @@ class SimpleConsoleMetricExporter(MetricExporter):
                     self._print_metric(service_name, metric)
         return MetricExportResult.SUCCESS
 
-    def _emit(self, key: tuple, message: str, attributes: dict | None = None) -> None:
+    def _emit(
+        self,
+        key: tuple,
+        message: str,
+        attributes: dict | None = None,
+        cpu_metrics: dict | None = None,
+        gpu_metrics: dict | None = None,
+    ) -> None:
         if self._last_printed.get(key) == message:
             return
         self._last_printed[key] = message
 
-        logger = self._get_logger()  # <-- use the lazily-built instance, not self._logger raw
+        logger = self._get_logger()
         if logger is not None:
-            logger.info(message, eventName="MetricExport", attributes=attributes or {})
+            logger.info(
+                message,
+                eventName="MetricExport",
+                attributes=attributes or {},
+                cpu_metrics=cpu_metrics or {},
+                gpu_metrics=gpu_metrics or {},
+            )
         else:
             print(message)
 
@@ -101,16 +114,19 @@ class SimpleConsoleMetricExporter(MetricExporter):
         name = metric.name
 
         if name == "system.cpu.utilization":
-            busy = [
-                p.value
-                for p in points
-                if p.attributes.get("state") in ("user", "system")
-            ]
+            busy = [p.value for p in points if p.attributes.get("state") in ("user", "system")]
             avg_busy_pct = (sum(busy) / len(busy)) * 100 if busy else 0
+            per_core = {
+                f"cpu_{p.attributes.get('cpu')}_{p.attributes.get('state')}": round(p.value * 100, 2)
+                for p in points
+            }
             self._emit(
                 (service_name, name),
                 f"CPU usage: {avg_busy_pct:.1f}%",
-                {"metric": name, "value_pct": round(avg_busy_pct, 1)},
+                cpu_metrics={
+                    "system_cpu_utilization_pct": round(avg_busy_pct, 1),
+                    **per_core,
+                },
             )
 
         elif name == "system.memory.usage":
@@ -120,11 +136,7 @@ class SimpleConsoleMetricExporter(MetricExporter):
             self._emit(
                 (service_name, name),
                 f"Memory: {used_gb:.2f} GB used / {free_gb:.2f} GB free",
-                {
-                    "metric": name,
-                    "used_gb": round(used_gb, 2),
-                    "free_gb": round(free_gb, 2),
-                },
+                attributes={"metric": name, "used_gb": round(used_gb, 2), "free_gb": round(free_gb, 2)},
             )
 
         elif name == "process.cpu.utilization":
@@ -132,7 +144,7 @@ class SimpleConsoleMetricExporter(MetricExporter):
                 self._emit(
                     (service_name, name),
                     f"Process CPU: {p.value * 100:.2f}%",
-                    {"metric": name, "value_pct": round(p.value * 100, 2)},
+                    cpu_metrics={"process_cpu_utilization_pct": round(p.value * 100, 2)},
                 )
 
         elif name == "process.runtime.cpython.memory":
@@ -141,23 +153,10 @@ class SimpleConsoleMetricExporter(MetricExporter):
             self._emit(
                 (service_name, name),
                 f"Process memory (RSS): {rss_mb:.1f} MB",
-                {"metric": name, "rss_mb": round(rss_mb, 1)},
+                attributes={"metric": name, "rss_mb": round(rss_mb, 1)},
             )
 
-        elif hasattr(metric.data, "aggregation_temporality") and not (points and hasattr(points[0], "bucket_counts")):
-            for p in points:
-                attrs = dict(p.attributes)
-                job_id = attrs.pop("job_id", None)
-                label = f"{name}" + (f" [job={job_id}]" if job_id else "")
-                key = (service_name, name, job_id)
-                self._emit(
-                    key,
-                    f"{label}: {p.value}",
-                    {"metric": name, "value": p.value, "job_id": job_id},
-                )
-
         elif points and hasattr(points[0], "bucket_counts"):
-            # histograms
             for p in points:
                 attrs = dict(p.attributes)
                 job_id = attrs.pop("job_id", None)
@@ -167,14 +166,23 @@ class SimpleConsoleMetricExporter(MetricExporter):
                 self._emit(
                     key,
                     f"{label}: count={p.count}, avg={avg:.3f}, min={p.min:.3f}, max={p.max:.3f}",
-                    {
-                        "metric": name,
-                        "count": p.count,
-                        "avg": round(avg, 3),
-                        "min": round(p.min, 3),
-                        "max": round(p.max, 3),
+                    attributes={
+                        "metric": name, "count": p.count,
+                        "avg": round(avg, 3), "min": round(p.min, 3), "max": round(p.max, 3),
                         "job_id": job_id,
                     },
+                )
+
+        elif hasattr(metric.data, "aggregation_temporality"):
+            for p in points:
+                attrs = dict(p.attributes)
+                job_id = attrs.pop("job_id", None)
+                label = f"{name}" + (f" [job={job_id}]" if job_id else "")
+                key = (service_name, name, job_id)
+                self._emit(
+                    key,
+                    f"{label}: {p.value}",
+                    attributes={"metric": name, "value": p.value, "job_id": job_id},
                 )
 
     # Forcing that nothing left in the exporter
