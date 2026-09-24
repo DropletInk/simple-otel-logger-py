@@ -53,11 +53,7 @@ def add_traces_span_exporter(OTLP_Span_exporter_endpoint=None) -> None:
         )
         trace.set_tracer_provider(provider)
 
-
 class SimpleConsoleMetricExporter(MetricExporter):
-    """Human-readable console output, with change-suppression so unchanged
-    values aren't reprinted on every periodic export."""
-
     DEFAULT_WATCHED = {
         "system.cpu.utilization",
         "system.memory.usage",
@@ -65,40 +61,37 @@ class SimpleConsoleMetricExporter(MetricExporter):
         "process.runtime.cpython.memory",
     }
 
-    def __init__(self, watched: set[str] | None = None, logger=None):
+    def __init__(self, watched: set[str] | None = None, logger_factory=None):
         super().__init__()
-        self.watched = (
-            watched if watched is not None else set(self.DEFAULT_WATCHED)
-        )
+        self.watched = watched  # None = watch everything, no filtering
         self._last_printed: dict[tuple, str] = {}
-        self._logger = logger
+        self._logger_factory = logger_factory
+        self._logger = None  # NOT built yet — built lazily on first use
 
-    # This is the Required export function  which is being used by the PeriodicExportingMetricReader
+    def _get_logger(self):
+        """Builds the logger on first use, not at construction time."""
+        if self._logger is None and self._logger_factory is not None:
+            self._logger = self._logger_factory()  # <-- actually CALL the factory here
+        return self._logger
+
     def export(self, metrics_data, **kwargs) -> MetricExportResult:
         for resource_metrics in metrics_data.resource_metrics:
-            service_name = resource_metrics.resource.attributes.get(
-                "service.name", "unknown"
-            )
+            service_name = resource_metrics.resource.attributes.get("service.name", "unknown")
             for scope_metrics in resource_metrics.scope_metrics:
                 for metric in scope_metrics.metrics:
-                    if metric.name not in self.watched:
+                    if self.watched is not None and metric.name not in self.watched:
                         continue
                     self._print_metric(service_name, metric)
         return MetricExportResult.SUCCESS
 
-    def _emit(
-        self, key: tuple, message: str, attributes: dict | None = None
-    ) -> None:
+    def _emit(self, key: tuple, message: str, attributes: dict | None = None) -> None:
         if self._last_printed.get(key) == message:
             return
         self._last_printed[key] = message
 
-        if self._logger is not None:
-            self._logger.info(
-                message,
-                eventName="MetricExport",
-                attributes=attributes or {},
-            )
+        logger = self._get_logger()  # <-- use the lazily-built instance, not self._logger raw
+        if logger is not None:
+            logger.info(message, eventName="MetricExport", attributes=attributes or {})
         else:
             print(message)
 
@@ -200,7 +193,7 @@ class SimpleConsoleMetricExporter(MetricExporter):
 def add_metric_exporter(
     OTLP_Metric_exporter_endpoint=None,
     watched: set[str] | None = None,
-    logger=None,
+    logger_factory=None,
 ) -> MeterProvider:
     global _meter_provider
 
@@ -211,7 +204,7 @@ def add_metric_exporter(
         )
     else:
         reader = PeriodicExportingMetricReader(
-            SimpleConsoleMetricExporter(watched=watched, logger=logger),
+            SimpleConsoleMetricExporter(watched=watched, logger_factory=logger_factory),
             export_interval_millis=OTEL_METRIC_EXPORT_INTERVAL_MS,
         )
 
