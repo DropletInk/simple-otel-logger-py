@@ -1,7 +1,7 @@
 import requests
 
 def capture_metrics_to_logs(port: int):
-    address = f"http://vllm-vlm:{port}/metrics"
+    address = f"http://0.0.0.0:{port}/metrics"
     try:
         # Query the vLLM metrics endpoint
         response = requests.get(address)
