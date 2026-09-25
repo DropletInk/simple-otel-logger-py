@@ -10,6 +10,7 @@ from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
+import requests
 
 resource = Resource.create(attributes={SERVICE_NAME: "Unknown-service"})
 
@@ -47,3 +48,13 @@ def add_metric_exporter(OTLP_Metric_exporter_endpoint=None) -> None:
             resource=resource, metric_readers=[reader]
         )
         metrics.set_meter_provider(meterProvider)
+
+
+def get_vllm_metrics(port: int):
+    address = f"http://vllm:{port}/metrics"
+    try:
+        response = requests.get(address)
+        if response.status_code == 200:
+            return response.text
+    except requests.RequestException as exc:
+        print(f"Failed to fetch vLLM metrics: {exc}")
