@@ -53,6 +53,7 @@ def add_traces_span_exporter(OTLP_Span_exporter_endpoint=None) -> None:
         )
         trace.set_tracer_provider(provider)
 
+
 class SimpleConsoleMetricExporter(MetricExporter):
     DEFAULT_WATCHED = {
         "system.cpu.utilization",
@@ -71,15 +72,22 @@ class SimpleConsoleMetricExporter(MetricExporter):
     def _get_logger(self):
         """Builds the logger on first use, not at construction time."""
         if self._logger is None and self._logger_factory is not None:
-            self._logger = self._logger_factory()  # <-- actually CALL the factory here
+            self._logger = (
+                self._logger_factory()
+            )  # <-- actually CALL the factory here
         return self._logger
 
     def export(self, metrics_data, **kwargs) -> MetricExportResult:
         for resource_metrics in metrics_data.resource_metrics:
-            service_name = resource_metrics.resource.attributes.get("service.name", "unknown")
+            service_name = resource_metrics.resource.attributes.get(
+                "service.name", "unknown"
+            )
             for scope_metrics in resource_metrics.scope_metrics:
                 for metric in scope_metrics.metrics:
-                    if self.watched is not None and metric.name not in self.watched:
+                    if (
+                        self.watched is not None
+                        and metric.name not in self.watched
+                    ):
                         continue
                     self._print_metric(service_name, metric)
         return MetricExportResult.SUCCESS
@@ -114,10 +122,16 @@ class SimpleConsoleMetricExporter(MetricExporter):
         name = metric.name
 
         if name == "system.cpu.utilization":
-            busy = [p.value for p in points if p.attributes.get("state") in ("user", "system")]
+            busy = [
+                p.value
+                for p in points
+                if p.attributes.get("state") in ("user", "system")
+            ]
             avg_busy_pct = (sum(busy) / len(busy)) * 100 if busy else 0
             per_core = {
-                f"cpu_{p.attributes.get('cpu')}_{p.attributes.get('state')}": round(p.value * 100, 2)
+                f"cpu_{p.attributes.get('cpu')}_{p.attributes.get('state')}": round(
+                    p.value * 100, 2
+                )
                 for p in points
             }
             self._emit(
@@ -136,7 +150,11 @@ class SimpleConsoleMetricExporter(MetricExporter):
             self._emit(
                 (service_name, name),
                 f"Memory: {used_gb:.2f} GB used / {free_gb:.2f} GB free",
-                attributes={"metric": name, "used_gb": round(used_gb, 2), "free_gb": round(free_gb, 2)},
+                attributes={
+                    "metric": name,
+                    "used_gb": round(used_gb, 2),
+                    "free_gb": round(free_gb, 2),
+                },
             )
 
         elif name == "process.cpu.utilization":
@@ -144,7 +162,9 @@ class SimpleConsoleMetricExporter(MetricExporter):
                 self._emit(
                     (service_name, name),
                     f"Process CPU: {p.value * 100:.2f}%",
-                    cpu_metrics={"process_cpu_utilization_pct": round(p.value * 100, 2)},
+                    cpu_metrics={
+                        "process_cpu_utilization_pct": round(p.value * 100, 2)
+                    },
                 )
 
         elif name == "process.runtime.cpython.memory":
@@ -167,8 +187,11 @@ class SimpleConsoleMetricExporter(MetricExporter):
                     key,
                     f"{label}: count={p.count}, avg={avg:.3f}, min={p.min:.3f}, max={p.max:.3f}",
                     attributes={
-                        "metric": name, "count": p.count,
-                        "avg": round(avg, 3), "min": round(p.min, 3), "max": round(p.max, 3),
+                        "metric": name,
+                        "count": p.count,
+                        "avg": round(avg, 3),
+                        "min": round(p.min, 3),
+                        "max": round(p.max, 3),
                         "job_id": job_id,
                     },
                 )
@@ -182,7 +205,11 @@ class SimpleConsoleMetricExporter(MetricExporter):
                 self._emit(
                     key,
                     f"{label}: {p.value}",
-                    attributes={"metric": name, "value": p.value, "job_id": job_id},
+                    attributes={
+                        "metric": name,
+                        "value": p.value,
+                        "job_id": job_id,
+                    },
                 )
 
     # Forcing that nothing left in the exporter
@@ -209,7 +236,9 @@ def add_metric_exporter(
         )
     else:
         reader = PeriodicExportingMetricReader(
-            SimpleConsoleMetricExporter(watched=watched, logger_factory=logger_factory),
+            SimpleConsoleMetricExporter(
+                watched=watched, logger_factory=logger_factory
+            ),
             export_interval_millis=OTEL_METRIC_EXPORT_INTERVAL_MS,
         )
 

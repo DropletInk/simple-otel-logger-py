@@ -11,7 +11,7 @@ from rich.console import Console
 from rich.text import Text
 from structlog.typing import EventDict
 
-from pylog.setting import get_environment, configure_telemetry
+from pylog.setting import get_environment
 from pylog.setting.setting import get_console_enabled
 from pylog.telemetry import get_tracer
 
@@ -117,6 +117,7 @@ def log_organiser(
         },
         "attributes": event_dict.get("attributes", {}),
     }
+
 
 def discard_renderer(logger, method_name, event_dict):
     return ""
@@ -265,12 +266,16 @@ def traced(span_name: str | None = None):
 
     return decorator
 
+
 class ConsoleLogger:
     def __init__(self, service_name: str = "Unknown-Service"):
         get_tracer()
         log_configure()
         self.service_name = service_name
-        resources = {"service_name": self.service_name, "environment": get_environment()}
+        resources = {
+            "service_name": self.service_name,
+            "environment": get_environment(),
+        }
         self.logger = structlog.get_logger("pylog").bind(resources=resources)
 
     def info(
