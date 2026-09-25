@@ -150,7 +150,7 @@ class SimpleConsoleMetricExporter(MetricExporter):
             self._emit(
                 (service_name, name),
                 f"Memory: {used_gb:.2f} GB used / {free_gb:.2f} GB free",
-                attributes={
+                cpu_metrics={
                     "metric": name,
                     "used_gb": round(used_gb, 2),
                     "free_gb": round(free_gb, 2),
@@ -173,7 +173,7 @@ class SimpleConsoleMetricExporter(MetricExporter):
             self._emit(
                 (service_name, name),
                 f"Process memory (RSS): {rss_mb:.1f} MB",
-                attributes={"metric": name, "rss_mb": round(rss_mb, 1)},
+                cpu_metrics={"metric": name, "rss_mb": round(rss_mb, 1)},
             )
 
         elif points and hasattr(points[0], "bucket_counts"):
@@ -186,7 +186,7 @@ class SimpleConsoleMetricExporter(MetricExporter):
                 self._emit(
                     key,
                     f"{label}: count={p.count}, avg={avg:.3f}, min={p.min:.3f}, max={p.max:.3f}",
-                    attributes={
+                    cpu_metrics={
                         "metric": name,
                         "count": p.count,
                         "avg": round(avg, 3),
@@ -205,7 +205,7 @@ class SimpleConsoleMetricExporter(MetricExporter):
                 self._emit(
                     key,
                     f"{label}: {p.value}",
-                    attributes={
+                    cpu_metrics={
                         "metric": name,
                         "value": p.value,
                         "job_id": job_id,
