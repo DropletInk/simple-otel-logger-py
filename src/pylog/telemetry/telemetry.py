@@ -64,17 +64,15 @@ class SimpleConsoleMetricExporter(MetricExporter):
 
     def __init__(self, watched: set[str] | None = None, logger_factory=None):
         super().__init__()
-        self.watched = watched  # None = watch everything, no filtering
+        self.watched = watched
         self._last_printed: dict[tuple, str] = {}
         self._logger_factory = logger_factory
-        self._logger = None  # NOT built yet — built lazily on first use
+        self._logger = None
 
     def _get_logger(self):
         """Builds the logger on first use, not at construction time."""
         if self._logger is None and self._logger_factory is not None:
-            self._logger = (
-                self._logger_factory()
-            )  # <-- actually CALL the factory here
+            self._logger = self._logger_factory()
         return self._logger
 
     def export(self, metrics_data, **kwargs) -> MetricExportResult:
