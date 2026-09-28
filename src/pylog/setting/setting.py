@@ -1,4 +1,5 @@
 import os
+
 from pylog.telemetry import (
     add_metric_exporter,
     add_traces_span_exporter,
@@ -7,17 +8,24 @@ from pylog.telemetry import (
 
 OTEL_SERVICE_NAME = os.getenv("OTEL_SERVICE_NAME", "unknown-service")
 
-OTEL_EXPORTER_TRACE_ENDPOINT = os.getenv("OTEL_EXPORTER_TRACE_ENDPOINT", None)
-
-OTEL_EXPORTER_METRIC_ENDPOINT = os.getenv(
-    "OTEL_EXPORTER_METRIC_ENDPOINT", None
+OTEL_EXPORTER_TRACE_ENDPOINT = os.getenv(
+    "OTEL_EXPORTER_TRACE_ENDPOINT",
+    None,
 )
 
-OTEL_EXPORTER_LOGS_ENDPOINT = os.getenv("OTEL_EXPORTER_LOGS_ENDPOINT", None)
+OTEL_EXPORTER_METRIC_ENDPOINT = os.getenv(
+    "OTEL_EXPORTER_METRIC_ENDPOINT",
+    None,
+)
 
+OTEL_EXPORTER_LOGS_ENDPOINT = os.getenv(
+    "OTEL_EXPORTER_LOGS_ENDPOINT",
+    None,
+)
 
 OTEL_ENABLE_SYSTEM_METRICS = os.getenv(
-    "OTEL_ENABLE_SYSTEM_METRICS", "True"
+    "OTEL_ENABLE_SYSTEM_METRICS",
+    "True",
 ).lower() in ("1", "true", "yes")
 
 
@@ -27,18 +35,32 @@ def _get_metrics_logger():
     return ConsoleLogger(service_name=OTEL_SERVICE_NAME)
 
 
-def configure_telemetry() -> None:
+def configure_telemetry(
+    metric_service_name: str | None = None,
+) -> None:
     """Configure OpenTelemetry exporters and system metrics."""
+
+    service_name = metric_service_name or OTEL_SERVICE_NAME
+
     add_metric_exporter(
         OTEL_EXPORTER_METRIC_ENDPOINT,
-        logger_factory=_get_metrics_logger,
+        service_name=service_name,
+        logger_factory=lambda: _get_metrics_logger(service_name),
     )
 
     if OTEL_EXPORTER_TRACE_ENDPOINT:
-        add_traces_span_exporter(OTEL_EXPORTER_TRACE_ENDPOINT)
+        add_traces_span_exporter(
+            OTEL_EXPORTER_TRACE_ENDPOINT
+        )
 
     if OTEL_ENABLE_SYSTEM_METRICS:
         enable_system_metrics()
+
+
+def _get_metrics_logger(service_name: str):
+    from pylog.logger import ConsoleLogger
+
+    return ConsoleLogger(service_name=service_name)
 
 
 def get_environment():
@@ -47,6 +69,3 @@ def get_environment():
 
 def get_console_enabled() -> bool:
     return os.getenv("LOG_ON_CONSOLE", "True")
-
-
-configure_telemetry()

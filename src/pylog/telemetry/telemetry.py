@@ -178,7 +178,9 @@ class SimpleConsoleMetricExporter(MetricExporter):
             for p in points:
                 attrs = dict(p.attributes)
                 job_id = attrs.pop("job_id", None)
+                operation_name = attrs.pop("operation",None)
                 label = f"{name}" + (f" [job={job_id}]" if job_id else "")
+
                 avg = p.sum / p.count if p.count else 0
                 key = (service_name, name, job_id)
                 self._emit(
@@ -191,6 +193,7 @@ class SimpleConsoleMetricExporter(MetricExporter):
                         "min": round(p.min, 3),
                         "max": round(p.max, 3),
                         "job_id": job_id,
+                        "operation_name":operation_name,
                     },
                 )
 
@@ -198,6 +201,7 @@ class SimpleConsoleMetricExporter(MetricExporter):
             for p in points:
                 attrs = dict(p.attributes)
                 job_id = attrs.pop("job_id", None)
+                operation_name = attrs.pop("operation",None)
                 label = f"{name}" + (f" [job={job_id}]" if job_id else "")
                 key = (service_name, name, job_id)
                 self._emit(
@@ -207,6 +211,7 @@ class SimpleConsoleMetricExporter(MetricExporter):
                         "metric": name,
                         "value": p.value,
                         "job_id": job_id,
+                        "operation_name":operation_name,
                     },
                 )
 
