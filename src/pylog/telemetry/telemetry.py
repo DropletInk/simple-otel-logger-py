@@ -24,6 +24,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 import resource as _resource
 from contextlib import contextmanager
+import time as _time
 
 
 OTEL_SERVICE_NAME = os.getenv("OTEL_SERVICE_NAME", "unknown-service")
@@ -237,14 +238,9 @@ class SimpleConsoleMetricExporter(MetricExporter):
 def add_metric_exporter(
     OTLP_Metric_exporter_endpoint=None,
     watched: set[str] | None = None,
-    service_name: str | None = None,
     logger_factory=None,
 ) -> MeterProvider:
     global _meter_provider
-
-    metric_resource = Resource.create(
-        attributes={SERVICE_NAME: service_name or OTEL_SERVICE_NAME}
-    )
 
     if OTLP_Metric_exporter_endpoint:
         reader = PeriodicExportingMetricReader(
