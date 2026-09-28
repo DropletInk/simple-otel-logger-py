@@ -192,6 +192,8 @@ class SimpleConsoleMetricExporter(MetricExporter):
                         "avg": round(avg, 3),
                         "min": round(p.min, 3),
                         "max": round(p.max, 3),
+                        
+                    },attributes={
                         "job_id": job_id,
                         "operation_name":operation_name,
                     },
@@ -210,6 +212,7 @@ class SimpleConsoleMetricExporter(MetricExporter):
                     cpu_metrics={
                         "metric": name,
                         "value": p.value,
+                    },attributes={
                         "job_id": job_id,
                         "operation_name":operation_name,
                     },
