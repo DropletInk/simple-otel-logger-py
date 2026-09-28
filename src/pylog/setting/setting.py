@@ -49,9 +49,7 @@ def configure_telemetry(
     )
 
     if OTEL_EXPORTER_TRACE_ENDPOINT:
-        add_traces_span_exporter(
-            OTEL_EXPORTER_TRACE_ENDPOINT
-        )
+        add_traces_span_exporter(OTEL_EXPORTER_TRACE_ENDPOINT)
 
     if OTEL_ENABLE_SYSTEM_METRICS:
         enable_system_metrics()
