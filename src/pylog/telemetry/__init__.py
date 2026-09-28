@@ -5,6 +5,7 @@ from .telemetry import (
     enable_system_metrics,
     get_meter,
     force_flush_metrics,
+    track_resource_usage,
 )
 
 __all__ = [
@@ -14,4 +15,5 @@ __all__ = [
     "enable_system_metrics",
     "get_meter",
     "force_flush_metrics",
+    "track_resource_usage",
 ]
