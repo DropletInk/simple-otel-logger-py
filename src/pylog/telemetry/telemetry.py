@@ -21,6 +21,12 @@ from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
+
+import resource as _resource
+from contextlib import contextmanager
+import time as _time
+
+
 OTEL_SERVICE_NAME = os.getenv("OTEL_SERVICE_NAME", "unknown-service")
 OTEL_METRIC_EXPORT_INTERVAL_MS = int(
     os.getenv("OTEL_METRIC_EXPORT_INTERVAL_MS", "5000")
@@ -178,7 +184,9 @@ class SimpleConsoleMetricExporter(MetricExporter):
             for p in points:
                 attrs = dict(p.attributes)
                 job_id = attrs.pop("job_id", None)
+                operation_name = attrs.pop("operation", None)
                 label = f"{name}" + (f" [job={job_id}]" if job_id else "")
+
                 avg = p.sum / p.count if p.count else 0
                 key = (service_name, name, job_id)
                 self._emit(
@@ -190,7 +198,10 @@ class SimpleConsoleMetricExporter(MetricExporter):
                         "avg": round(avg, 3),
                         "min": round(p.min, 3),
                         "max": round(p.max, 3),
+                    },
+                    attributes={
                         "job_id": job_id,
+                        "operation_name": operation_name,
                     },
                 )
 
@@ -198,6 +209,7 @@ class SimpleConsoleMetricExporter(MetricExporter):
             for p in points:
                 attrs = dict(p.attributes)
                 job_id = attrs.pop("job_id", None)
+                operation_name = attrs.pop("operation", None)
                 label = f"{name}" + (f" [job={job_id}]" if job_id else "")
                 key = (service_name, name, job_id)
                 self._emit(
@@ -206,7 +218,10 @@ class SimpleConsoleMetricExporter(MetricExporter):
                     cpu_metrics={
                         "metric": name,
                         "value": p.value,
+                    },
+                    attributes={
                         "job_id": job_id,
+                        "operation_name": operation_name,
                     },
                 )
 
@@ -223,9 +238,14 @@ class SimpleConsoleMetricExporter(MetricExporter):
 def add_metric_exporter(
     OTLP_Metric_exporter_endpoint=None,
     watched: set[str] | None = None,
+    service_name: str | None = None,
     logger_factory=None,
 ) -> MeterProvider:
     global _meter_provider
+
+    metric_resource = Resource.create(
+        attributes={SERVICE_NAME: service_name or OTEL_SERVICE_NAME}
+    )
 
     if OTLP_Metric_exporter_endpoint:
         reader = PeriodicExportingMetricReader(
@@ -279,3 +299,38 @@ def enable_system_metrics(config: dict | None = None) -> None:
     }
     SystemMetricsInstrumentor(config=config or default_config).instrument()
     _system_metrics_instrumented = True
+
+
+def get_process_resource_usage() -> tuple[float, int]:
+    """Returns (cumulative CPU seconds, current RSS in bytes) for this process."""
+    usage = _resource.getrusage(_resource.RUSAGE_SELF)
+    cpu_seconds = usage.ru_utime + usage.ru_stime
+    rss_bytes = usage.ru_maxrss * 1024  # ru_maxrss is KB on Linux
+    return cpu_seconds, rss_bytes
+
+
+@contextmanager
+def track_resource_usage():
+    """Context manager yielding a dict that's filled in with resource-usage
+    deltas once the `with` block exits.
+
+    Usage:
+        with track_resource_usage() as usage:
+            do_the_work()
+        # usage now has cpu_seconds, rss_bytes, wall_seconds, cpu_percent
+    """
+    cpu_start, _ = get_process_resource_usage()
+    wall_start = _time.perf_counter()
+    usage: dict = {}
+    try:
+        yield usage
+    finally:
+        cpu_end, rss_bytes = get_process_resource_usage()
+        wall_seconds = _time.perf_counter() - wall_start
+        cpu_seconds = cpu_end - cpu_start
+        usage["cpu_seconds"] = cpu_seconds
+        usage["rss_bytes"] = rss_bytes
+        usage["wall_seconds"] = wall_seconds
+        usage["cpu_percent"] = (
+            (cpu_seconds / wall_seconds) * 100 if wall_seconds > 0 else 0.0
+        )
