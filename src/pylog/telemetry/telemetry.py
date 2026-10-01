@@ -184,7 +184,7 @@ class SimpleConsoleMetricExporter(MetricExporter):
                     f"Process CPU: {p.value * 100:.2f}%",
                     cpu_metrics={
                         "metric": name,
-                        "process_cpu_utilization_pct": round(p.value * 100, 2)
+                        "process_cpu_utilization_pct": round(p.value * 100, 2),
                     },
                 )
 
