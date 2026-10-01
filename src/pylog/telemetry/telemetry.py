@@ -88,6 +88,7 @@ class SimpleConsoleMetricExporter(MetricExporter):
             )
             for scope_metrics in resource_metrics.scope_metrics:
                 for metric in scope_metrics.metrics:
+                    print("..........METRIC RECEIVED:", metric.name) #..........................
                     if (
                         self.watched is not None
                         and metric.name not in self.watched
@@ -157,6 +158,7 @@ class SimpleConsoleMetricExporter(MetricExporter):
                 (service_name, name),
                 f"CPU usage: {avg_busy_pct:.1f}%",
                 cpu_metrics={
+                    "metric": name,
                     "system_cpu_utilization_pct": round(avg_busy_pct, 1),
                     **per_core,
                 },
