@@ -102,6 +102,8 @@ class SimpleConsoleMetricExporter(MetricExporter):
         message: str,
         attributes: dict | None = None,
         cpu_metrics: dict | None = None,
+        memory_metrics: dict | None = None,
+        application_metrics: dict | None = None,
         gpu_metrics: dict | None = None,
     ) -> None:
         if self._last_printed.get(key) == message:
@@ -115,10 +117,23 @@ class SimpleConsoleMetricExporter(MetricExporter):
                 eventName="MetricExport",
                 attributes=attributes or {},
                 cpu_metrics=cpu_metrics or {},
+                memory_metrics=memory_metrics or {},
+                application_metrics=application_metrics or {},
                 gpu_metrics=gpu_metrics or {},
             )
         else:
             print(message)
+
+    def _get_metric_category(self, metric_name: str) -> str:
+        metric_name = metric_name.lower()
+
+        if "memory" in metric_name:
+            return "memory_metrics"
+
+        if "cpu" in metric_name:
+            return "cpu_metrics"
+
+        return "application_metrics"
 
     # Printing the Metrics in the human Readable format
     def _print_metric(self, service_name: str, metric) -> None:
@@ -154,7 +169,7 @@ class SimpleConsoleMetricExporter(MetricExporter):
             self._emit(
                 (service_name, name),
                 f"Memory: {used_gb:.2f} GB used / {free_gb:.2f} GB free",
-                cpu_metrics={
+                memory_metrics={
                     "metric": name,
                     "used_gb": round(used_gb, 2),
                     "free_gb": round(free_gb, 2),
@@ -177,7 +192,7 @@ class SimpleConsoleMetricExporter(MetricExporter):
             self._emit(
                 (service_name, name),
                 f"Process memory (RSS): {rss_mb:.1f} MB",
-                cpu_metrics={"metric": name, "rss_mb": round(rss_mb, 1)},
+                memory_metrics={"metric": name, "rss_mb": round(rss_mb, 1)},
             )
 
         elif points and hasattr(points[0], "bucket_counts"):
@@ -189,15 +204,19 @@ class SimpleConsoleMetricExporter(MetricExporter):
 
                 avg = p.sum / p.count if p.count else 0
                 key = (service_name, name, job_id)
+                metric_data = {
+                    "metric": name,
+                    "count": p.count,
+                    "avg": round(avg, 3),
+                    "min": round(p.min, 3),
+                    "max": round(p.max, 3),
+                }
+                metric_category = self._get_metric_category(name)
                 self._emit(
                     key,
                     f"{label}: count={p.count}, avg={avg:.3f}, min={p.min:.3f}, max={p.max:.3f}",
-                    cpu_metrics={
-                        "metric": name,
-                        "count": p.count,
-                        "avg": round(avg, 3),
-                        "min": round(p.min, 3),
-                        "max": round(p.max, 3),
+                    **{
+                        metric_category: metric_data,
                     },
                     attributes={
                         "job_id": job_id,
@@ -212,12 +231,16 @@ class SimpleConsoleMetricExporter(MetricExporter):
                 operation_name = attrs.pop("operation", None)
                 label = f"{name}" + (f" [job={job_id}]" if job_id else "")
                 key = (service_name, name, job_id)
+                metric_data = {
+                    "metric": name,
+                    "value": p.value,
+                }
+                metric_category = self._get_metric_category(name)
                 self._emit(
                     key,
                     f"{label}: {p.value}",
-                    cpu_metrics={
-                        "metric": name,
-                        "value": p.value,
+                    **{
+                        metric_category: metric_data,
                     },
                     attributes={
                         "job_id": job_id,
@@ -260,7 +283,9 @@ def add_metric_exporter(
             export_interval_millis=OTEL_METRIC_EXPORT_INTERVAL_MS,
         )
 
-    _meter_provider = MeterProvider(resource=resource, metric_readers=[reader])
+    _meter_provider = MeterProvider(
+        resource=metric_resource, metric_readers=[reader]
+    )
     metrics.set_meter_provider(_meter_provider)
     return _meter_provider
 

@@ -113,6 +113,8 @@ def log_organiser(
         "body": event_dict.get("body"),
         "metrics": {
             "cpu_metrics": event_dict.get("cpu_metrics", {}),
+            "memory_metrics": event_dict.get("memory_metrics", {}),
+            "application_metrics": event_dict.get("application_metrics", {}),
             "gpu_metrics": event_dict.get("gpu_metrics", {}),
         },
         "attributes": event_dict.get("attributes", {}),
@@ -284,6 +286,8 @@ class ConsoleLogger:
         eventName=None,
         attributes=None,
         cpu_metrics=None,
+        memory_metrics=None,
+        application_metrics=None,
         gpu_metrics=None,
         **kwargs,
     ):
@@ -294,6 +298,10 @@ class ConsoleLogger:
             kwargs["attributes"] = attributes
         if cpu_metrics is not None:
             kwargs["cpu_metrics"] = cpu_metrics
+        if memory_metrics is not None:
+            kwargs["memory_metrics"] = memory_metrics
+        if application_metrics is not None:
+            kwargs["application_metrics"] = application_metrics
         if gpu_metrics is not None:
             kwargs["gpu_metrics"] = gpu_metrics
         self.logger.info(message, **kwargs)
@@ -304,6 +312,8 @@ class ConsoleLogger:
         eventName=None,
         attributes=None,
         cpu_metrics=None,
+        memory_metrics=None,
+        application_metrics=None,
         gpu_metrics=None,
         **kwargs,
     ):
@@ -314,6 +324,10 @@ class ConsoleLogger:
             kwargs["attributes"] = attributes
         if cpu_metrics is not None:
             kwargs["cpu_metrics"] = cpu_metrics
+        if memory_metrics is not None:
+            kwargs["memory_metrics"] = memory_metrics
+        if application_metrics is not None:
+            kwargs["application_metrics"] = application_metrics
         if gpu_metrics is not None:
             kwargs["gpu_metrics"] = gpu_metrics
         self.logger.error(message, **kwargs)
@@ -324,6 +338,8 @@ class ConsoleLogger:
         eventName=None,
         attributes=None,
         cpu_metrics=None,
+        memory_metrics=None,
+        application_metrics=None,
         gpu_metrics=None,
         **kwargs,
     ):
@@ -334,6 +350,10 @@ class ConsoleLogger:
             kwargs["attributes"] = attributes
         if cpu_metrics is not None:
             kwargs["cpu_metrics"] = cpu_metrics
+        if memory_metrics is not None:
+            kwargs["memory_metrics"] = memory_metrics
+        if application_metrics is not None:
+            kwargs["application_metrics"] = application_metrics
         if gpu_metrics is not None:
             kwargs["gpu_metrics"] = gpu_metrics
         self.logger.warning(message, **kwargs)
@@ -344,6 +364,8 @@ class ConsoleLogger:
         eventName=None,
         attributes=None,
         cpu_metrics=None,
+        memory_metrics=None,
+        application_metrics=None,
         gpu_metrics=None,
         **kwargs,
     ):
@@ -354,6 +376,10 @@ class ConsoleLogger:
             kwargs["attributes"] = attributes
         if cpu_metrics is not None:
             kwargs["cpu_metrics"] = cpu_metrics
+        if memory_metrics is not None:
+            kwargs["memory_metrics"] = memory_metrics
+        if application_metrics is not None:
+            kwargs["application_metrics"] = application_metrics
         if gpu_metrics is not None:
             kwargs["gpu_metrics"] = gpu_metrics
         self.logger.debug(message, **kwargs)
@@ -364,6 +390,8 @@ class ConsoleLogger:
         eventName=None,
         attributes=None,
         cpu_metrics=None,
+        memory_metrics=None,
+        application_metrics=None,
         gpu_metrics=None,
         **kwargs,
     ):
@@ -374,6 +402,10 @@ class ConsoleLogger:
             kwargs["attributes"] = attributes
         if cpu_metrics is not None:
             kwargs["cpu_metrics"] = cpu_metrics
+        if memory_metrics is not None:
+            kwargs["memory_metrics"] = memory_metrics
+        if application_metrics is not None:
+            kwargs["application_metrics"] = application_metrics
         if gpu_metrics is not None:
             kwargs["gpu_metrics"] = gpu_metrics
         self.logger.error(message, **kwargs)
