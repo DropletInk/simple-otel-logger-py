@@ -6,7 +6,7 @@ from functools import wraps
 from typing import Any, Protocol, TypedDict, runtime_checkable
 
 import structlog
-from opentelemetry import trace
+from opentelemetry import trace, baggage
 from rich.console import Console
 from rich.text import Text
 from structlog.typing import EventDict
@@ -14,6 +14,7 @@ from structlog.typing import EventDict
 from pylog.setting import get_environment
 from pylog.setting.setting import get_console_enabled
 from pylog.telemetry import get_tracer
+from collections.abc import Mapping
 
 tracer = trace.get_tracer(__name__)
 console = Console(
@@ -21,6 +22,14 @@ console = Console(
     color_system="standard",
 )
 
+_baggage_fields: dict[str, str] = {}
+
+
+def configure_baggage_fields(
+    baggage_fields: Mapping[str, str],
+) -> None:
+    global _baggage_fields
+    _baggage_fields = dict(baggage_fields)
 
 @runtime_checkable
 class Logger(Protocol):
@@ -102,6 +111,14 @@ def otel_tags(
 def log_organiser(
     _logger, method_name: str | None, event_dict: EventDict
 ) -> dict:
+    
+    attributes = dict(event_dict.get("attributes") or {})
+    
+    for baggage_key, attribute_name in _baggage_fields.items():
+        baggage_value = baggage.get_baggage(baggage_key)
+        
+        if baggage_value is not None:
+            attributes.setdefault(attribute_name, baggage_value)
     return {
         "resources": event_dict.get("resources"),
         "instrumentationScope": event_dict.get("instrumentationScope"),
@@ -117,7 +134,7 @@ def log_organiser(
             "application_metrics": event_dict.get("application_metrics", {}),
             "gpu_metrics": event_dict.get("gpu_metrics", {}),
         },
-        "attributes": event_dict.get("attributes", {}),
+        "attributes": attributes,
     }
 
 

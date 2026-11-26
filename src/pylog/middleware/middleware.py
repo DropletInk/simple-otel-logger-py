@@ -7,7 +7,10 @@ import structlog
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from pylog.logger import log_configure
+from opentelemetry import context
+from opentelemetry.baggage.propagation import W3CBaggagePropagator
 
+baggage_propagator = W3CBaggagePropagator()
 
 def add_request_id() -> uuid.UUID:
     request_id = uuid.uuid4()
@@ -28,22 +31,30 @@ def create_log_middleware(
     async def log_middleware(
         request: Any, call_next: Callable[[Any], Any]
     ) -> Any:
-        start_time = time.time()
-        req_data = request_data(request)
-        req_data["request_id"] = add_request_id()
+        
+        extracted_context = baggage_propagator.extract(request.headers)
+        context_restoration_token = context.attach(extracted_context)
+        
+        try:
+            start_time = time.time()
+            req_data = request_data(request)
+            req_data["request_id"] = add_request_id()
 
-        logger.info("Request Started", attributes=req_data)
+            logger.info("Request Started", attributes=req_data)
 
-        response = await call_next(request)
+            response = await call_next(request)
 
-        duration = time.time() - start_time
-        res_data = response_data(request, response)
-        logger.info(
-            "Response Received", attributes=res_data, duration=duration
-        )
+            duration = time.time() - start_time
+            res_data = response_data(request, response)
+            logger.info(
+                "Response Received", attributes=res_data, duration=duration
+            )
 
-        return response
+            return response
 
+        finally:
+            context.detach(context_restoration_token)
+            
     return log_middleware
 
 
