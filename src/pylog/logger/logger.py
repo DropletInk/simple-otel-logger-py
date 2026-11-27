@@ -7,7 +7,7 @@ from functools import wraps
 from typing import Any, Protocol, TypedDict, runtime_checkable
 
 import structlog
-from opentelemetry import trace, baggage
+from opentelemetry import trace
 from rich.console import Console
 from rich.text import Text
 from structlog.typing import EventDict
@@ -15,7 +15,11 @@ from structlog.typing import EventDict
 from pylog.setting import get_environment
 from pylog.setting.setting import get_console_enabled
 from pylog.telemetry import get_tracer
-from collections.abc import Mapping
+from pylog.utils.baggage import (
+    configure_baggage_fields,
+    configure_baggage_fields_from_env,
+    enrich_attributes_with_baggage,
+)
 
 tracer = trace.get_tracer(__name__)
 console = Console(
@@ -23,35 +27,6 @@ console = Console(
     color_system="standard",
 )
 
-_baggage_fields: dict[str, str] = {}
-
-
-def configure_baggage_fields(
-    baggage_fields: Mapping[str, str],
-) -> None:
-    global _baggage_fields
-    _baggage_fields = dict(baggage_fields)
-
-def configure_baggage_fields_from_env() -> None:
-    
-    raw_fields = os.getenv("OTEL_BAGGAGE_FIELDS", "")
-
-    baggage_fields: dict[str, str] = {}
-
-    for field in raw_fields.split(";"):
-        field = field.strip()
-
-        if field:
-            baggage_key, separator, attribute_name = field.partition(":")
-
-            if not separator or not baggage_key.strip() or not attribute_name.strip():
-                raise ValueError(
-                    f"Invalid OTEL_BAGGAGE_FIELDS entry: {field}"
-                )
-
-            baggage_fields[baggage_key.strip()] = attribute_name.strip()
-
-    configure_baggage_fields(baggage_fields)
 
 @runtime_checkable
 class Logger(Protocol):
@@ -133,14 +108,8 @@ def otel_tags(
 def log_organiser(
     _logger, method_name: str | None, event_dict: EventDict
 ) -> dict:
-    
-    attributes = dict(event_dict.get("attributes") or {})
-    
-    for baggage_key, attribute_name in _baggage_fields.items():
-        baggage_value = baggage.get_baggage(baggage_key)
-        
-        if baggage_value is not None:
-            attributes.setdefault(attribute_name, baggage_value)
+
+    attributes = enrich_attributes_with_baggage(event_dict.get("attributes"))
     return {
         "resources": event_dict.get("resources"),
         "instrumentationScope": event_dict.get("instrumentationScope"),
