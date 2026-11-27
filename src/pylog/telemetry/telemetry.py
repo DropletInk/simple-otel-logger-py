@@ -20,6 +20,8 @@ from opentelemetry.sdk.metrics.export import (
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry import propagate
+from opentelemetry.baggage.propagation import W3CBaggagePropagator
 
 
 import resource as _resource
@@ -42,6 +44,8 @@ provider = trace.get_tracer_provider()
 _meter_provider: MeterProvider | None = None
 _system_metrics_instrumented = False
 
+def configure_propagation() -> None:
+    propagate.set_global_textmap(W3CBaggagePropagator())
 
 def get_tracer() -> object:
     if not isinstance(provider, TracerProvider):

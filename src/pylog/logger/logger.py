@@ -2,6 +2,7 @@ import inspect
 import json
 import logging
 import sys
+import os
 from functools import wraps
 from typing import Any, Protocol, TypedDict, runtime_checkable
 
@@ -30,6 +31,27 @@ def configure_baggage_fields(
 ) -> None:
     global _baggage_fields
     _baggage_fields = dict(baggage_fields)
+
+def configure_baggage_fields_from_env() -> None:
+    
+    raw_fields = os.getenv("OTEL_BAGGAGE_FIELDS", "")
+
+    baggage_fields: dict[str, str] = {}
+
+    for field in raw_fields.split(";"):
+        field = field.strip()
+
+        if field:
+            baggage_key, separator, attribute_name = field.partition(":")
+
+            if not separator or not baggage_key.strip() or not attribute_name.strip():
+                raise ValueError(
+                    f"Invalid OTEL_BAGGAGE_FIELDS entry: {field}"
+                )
+
+            baggage_fields[baggage_key.strip()] = attribute_name.strip()
+
+    configure_baggage_fields(baggage_fields)
 
 @runtime_checkable
 class Logger(Protocol):
@@ -202,6 +224,7 @@ def rich_renderer(logger, method_name, event_dict):
 
 
 def log_configure() -> None:
+    configure_baggage_fields_from_env()
     processors = [
         structlog.contextvars.merge_contextvars,
         add_open_telemetry_spans,

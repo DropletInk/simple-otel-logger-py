@@ -7,10 +7,7 @@ import structlog
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from pylog.logger import log_configure
-from opentelemetry import context
-from opentelemetry.baggage.propagation import W3CBaggagePropagator
-
-baggage_propagator = W3CBaggagePropagator()
+from opentelemetry import context, propagate
 
 def add_request_id() -> uuid.UUID:
     request_id = uuid.uuid4()
@@ -32,7 +29,7 @@ def create_log_middleware(
         request: Any, call_next: Callable[[Any], Any]
     ) -> Any:
         
-        extracted_context = baggage_propagator.extract(request.headers)
+        extracted_context = propagate.extract(request.headers)
         context_restoration_token = context.attach(extracted_context)
         
         try:
