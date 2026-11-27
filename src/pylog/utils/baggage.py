@@ -15,7 +15,7 @@ def configure_baggage_fields(
 
 
 def configure_baggage_fields_from_env() -> None:
-    raw_fields = os.getenv("PYLOG_BAGGAGE_FIELDS", "")
+    raw_fields = os.getenv("OTEL_BAGGAGE_FIELDS", "")
     baggage_fields: dict[str, str] = {}
 
     for field in raw_fields.split(";"):
@@ -26,7 +26,7 @@ def configure_baggage_fields_from_env() -> None:
 
             if not separator or not baggage_key.strip() or not attribute_name.strip():
                 raise ValueError(
-                    f"Invalid PYLOG_BAGGAGE_FIELDS entry: {field}"
+                    f"Invalid OTEL_BAGGAGE_FIELDS entry: {field}"
                 )
 
             baggage_fields[baggage_key.strip()] = attribute_name.strip()
