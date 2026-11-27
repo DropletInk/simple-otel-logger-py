@@ -3,6 +3,7 @@ import os
 from pylog.telemetry import (
     add_metric_exporter,
     add_traces_span_exporter,
+    configure_propagation,
     enable_system_metrics,
 )
 
@@ -39,6 +40,8 @@ def configure_telemetry(
     metric_service_name: str | None = None,
 ) -> None:
     """Configure OpenTelemetry exporters and system metrics."""
+    
+    configure_propagation()
 
     service_name = metric_service_name or OTEL_SERVICE_NAME
 

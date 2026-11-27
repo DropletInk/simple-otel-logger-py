@@ -2,6 +2,7 @@ import inspect
 import json
 import logging
 import sys
+import os
 from functools import wraps
 from typing import Any, Protocol, TypedDict, runtime_checkable
 
@@ -14,6 +15,11 @@ from structlog.typing import EventDict
 from pylog.setting import get_environment
 from pylog.setting.setting import get_console_enabled
 from pylog.telemetry import get_tracer
+from pylog.utils.baggage import (
+    configure_baggage_fields,
+    configure_baggage_fields_from_env,
+    enrich_attributes_with_baggage,
+)
 
 tracer = trace.get_tracer(__name__)
 console = Console(
@@ -102,6 +108,8 @@ def otel_tags(
 def log_organiser(
     _logger, method_name: str | None, event_dict: EventDict
 ) -> dict:
+
+    attributes = enrich_attributes_with_baggage(event_dict.get("attributes"))
     return {
         "resources": event_dict.get("resources"),
         "instrumentationScope": event_dict.get("instrumentationScope"),
@@ -117,7 +125,7 @@ def log_organiser(
             "application_metrics": event_dict.get("application_metrics", {}),
             "gpu_metrics": event_dict.get("gpu_metrics", {}),
         },
-        "attributes": event_dict.get("attributes", {}),
+        "attributes": attributes,
     }
 
 
@@ -185,6 +193,7 @@ def rich_renderer(logger, method_name, event_dict):
 
 
 def log_configure() -> None:
+    configure_baggage_fields_from_env()
     processors = [
         structlog.contextvars.merge_contextvars,
         add_open_telemetry_spans,

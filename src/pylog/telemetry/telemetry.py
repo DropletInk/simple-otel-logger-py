@@ -20,6 +20,12 @@ from opentelemetry.sdk.metrics.export import (
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry import propagate
+from opentelemetry.baggage.propagation import W3CBaggagePropagator
+from pylog.utils.baggage import (
+    enrich_attributes_with_baggage,
+    configure_baggage_fields_from_env,
+)
 
 
 import resource as _resource
@@ -41,6 +47,10 @@ provider = trace.get_tracer_provider()
 
 _meter_provider: MeterProvider | None = None
 _system_metrics_instrumented = False
+
+
+def configure_propagation() -> None:
+    propagate.set_global_textmap(W3CBaggagePropagator())
 
 
 def get_tracer() -> object:
@@ -267,6 +277,7 @@ def add_metric_exporter(
     logger_factory=None,
 ) -> MeterProvider:
     global _meter_provider
+    configure_baggage_fields_from_env()
 
     metric_resource = Resource.create(
         attributes={SERVICE_NAME: service_name or OTEL_SERVICE_NAME}
@@ -292,11 +303,60 @@ def add_metric_exporter(
     return _meter_provider
 
 
+class BaggageInstrument:
+    def __init__(self, instrument):
+        self._instrument = instrument
+
+    def add(self, amount, attributes=None, context=None):
+        enriched_attributes = enrich_attributes_with_baggage(attributes)
+
+        self._instrument.add(
+            amount,
+            attributes=enriched_attributes,
+            context=context,
+        )
+
+    def record(self, amount, attributes=None, context=None):
+        enriched_attributes = enrich_attributes_with_baggage(attributes)
+
+        self._instrument.record(
+            amount,
+            attributes=enriched_attributes,
+            context=context,
+        )
+
+    def __getattr__(self, name):
+        return getattr(self._instrument, name)
+
+
+class BaggageMeter:
+    def __init__(self, meter):
+        self._meter = meter
+
+    def __getattr__(self, name):
+        attribute = getattr(self._meter, name)
+
+        if name in {
+            "create_counter",
+            "create_up_down_counter",
+            "create_histogram",
+        }:
+
+            def create_instrument(*args, **kwargs):
+                instrument = attribute(*args, **kwargs)
+                return BaggageInstrument(instrument)
+
+            return create_instrument
+
+        return attribute
+
+
 # Helper functions
-def get_meter(name: str | None = None) -> metrics.Meter:
+def get_meter(name: str | None = None) -> BaggageMeter:
     """Public entrypoint for app code — returns a Meter bound to the
     shared MeterProvider, using OTEL_SERVICE_NAME as the default scope name."""
-    return metrics.get_meter(name or OTEL_SERVICE_NAME)
+    meter = metrics.get_meter(name or OTEL_SERVICE_NAME)
+    return BaggageMeter(meter)
 
 
 def get_meter_provider() -> MeterProvider | None:

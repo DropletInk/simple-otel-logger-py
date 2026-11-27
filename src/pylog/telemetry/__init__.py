@@ -1,6 +1,7 @@
 from .telemetry import (
     add_metric_exporter,
     add_traces_span_exporter,
+    configure_propagation,
     get_tracer,
     enable_system_metrics,
     get_meter,
@@ -11,6 +12,7 @@ from .telemetry import (
 __all__ = [
     "add_metric_exporter",
     "add_traces_span_exporter",
+    "configure_propagation",
     "get_tracer",
     "enable_system_metrics",
     "get_meter",
